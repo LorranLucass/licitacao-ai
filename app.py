@@ -1,42 +1,181 @@
+from pathlib import Path
+
+from flask import (
+    Flask,
+    render_template,
+    request,
+    send_file,
+)
+
 from services.pdf_reader import extrair_texto_pdf
 from services.ai_extractor import extrair_dados_com_ia
+from services.item_matcher import filtrar_itens
 from services.bloco_notas import gerar_bloco_notas
-from services.item_matcher import (
-    carregar_produtos,
-    filtrar_itens
+
+
+# ============================================================
+# CONFIGURAÇÃO
+# ============================================================
+
+app = Flask(
+    __name__,
+    template_folder="interface/templates",
+    static_folder="interface/static",
 )
 
 
-def main():
+PASTA_SAIDA = Path("saida")
+PASTA_EDITAIS = Path("editais")
 
-    print("================================")
-    print("         LICITAÇÃO AI")
-    print("================================")
-    print()
+PASTA_SAIDA.mkdir(
+    parents=True,
+    exist_ok=True,
+)
 
-    caminho_pdf = input(
-        "Digite o caminho do edital PDF: "
-    ).strip()
+PASTA_EDITAIS.mkdir(
+    parents=True,
+    exist_ok=True,
+)
+
+
+# ============================================================
+# PÁGINA INICIAL
+# ============================================================
+
+@app.route("/")
+def inicio():
+
+    return render_template(
+        "index.html"
+    )
+
+
+# ============================================================
+# ANALISAR EDITAL
+# ============================================================
+
+@app.route(
+    "/analisar",
+    methods=["POST"]
+)
+def analisar():
 
     try:
 
+        # ----------------------------------------------------
+        # RECEBER ARQUIVO
+        # ----------------------------------------------------
+
+        arquivo = request.files.get(
+            "arquivo"
+        )
+
+        if not arquivo:
+
+            return render_template(
+                "erro.html",
+                erro="Nenhum arquivo PDF foi selecionado."
+            )
+
+        if not arquivo.filename:
+
+            return render_template(
+                "erro.html",
+                erro="O arquivo selecionado não possui nome."
+            )
+
+        # ----------------------------------------------------
+        # VALIDAR PDF
+        # ----------------------------------------------------
+
+        nome_arquivo = arquivo.filename
+
+        if not nome_arquivo.lower().endswith(".pdf"):
+
+            return render_template(
+                "erro.html",
+                erro="O arquivo precisa estar no formato PDF."
+            )
+
+        # ----------------------------------------------------
+        # SALVAR PDF
+        # ----------------------------------------------------
+
+        caminho_pdf = (
+            PASTA_EDITAIS /
+            nome_arquivo
+        )
+
+        arquivo.save(
+            caminho_pdf
+        )
+
+        # ----------------------------------------------------
+        # LER PDF
+        # ----------------------------------------------------
+
+        print()
+        print("================================")
+        print("LICITA PDF")
+        print("================================")
         print()
         print("Lendo edital...")
 
-        texto = extrair_texto_pdf(caminho_pdf)
+        texto = extrair_texto_pdf(
+            str(caminho_pdf)
+        )
 
-        print("Enviando edital para análise da IA...")
+        if not texto.strip():
 
-        dados = extrair_dados_com_ia(texto)
+            return render_template(
+                "erro.html",
+                erro=(
+                    "Não foi possível extrair "
+                    "texto do PDF."
+                )
+            )
 
-        # Filtra somente os produtos do Pelotão DELTA
-        dados = filtrar_itens(dados)
+        # ----------------------------------------------------
+        # IA
+        # ----------------------------------------------------
+
+        print(
+            "Enviando edital para análise da IA..."
+        )
+
+        dados = extrair_dados_com_ia(
+            texto
+        )
+
+        # ----------------------------------------------------
+        # FILTRO DELTA
+        # ----------------------------------------------------
+
+        print(
+            "Procurando produtos compatíveis "
+            "na tabela DELTA..."
+        )
+
+        dados = filtrar_itens(
+            dados
+        )
+
+        # ----------------------------------------------------
+        # MOSTRAR ITENS NO TERMINAL
+        # ----------------------------------------------------
 
         print()
-        print("ITENS ENCONTRADOS NA TABELA DELTA:")
-        print("----------------------------------")
+        print(
+            "ITENS ENCONTRADOS NA TABELA DELTA:"
+        )
+        print(
+            "----------------------------------"
+        )
 
-        for item in dados.get("itens", []):
+        for item in dados.get(
+            "itens",
+            []
+        ):
 
             print(
                 f"Item {item.get('item')}: "
@@ -44,11 +183,18 @@ def main():
             )
 
             print(
-                f"Marca: {item.get('marca_tabela')}"
+                f"Marca: "
+                f"{item.get('marca_tabela')}"
             )
 
             print(
-                f"Custo: {item.get('custo')}"
+                f"Modelo: "
+                f"{item.get('modelo')}"
+            )
+
+            print(
+                f"Custo: "
+                f"{item.get('custo')}"
             )
 
             print(
@@ -56,10 +202,24 @@ def main():
                 f"{item.get('minimo_feirao')}"
             )
 
-        # Gera o bloco de notas
+            print()
+
+        # ----------------------------------------------------
+        # GERAR BLOCO DE NOTAS
+        # ----------------------------------------------------
+
+        print(
+            "Gerando bloco de notas..."
+        )
+
+        caminho_bloco = (
+            PASTA_SAIDA /
+            "bloco_notas.txt"
+        )
+
         gerar_bloco_notas(
             dados,
-            "saida/bloco_notas.txt"
+            str(caminho_bloco)
         )
 
         print(
@@ -67,21 +227,73 @@ def main():
         )
 
         print(
-            "Arquivo: saida/bloco_notas.txt"
+            f"Arquivo: {caminho_bloco}"
         )
 
         print()
-        print("QUANTIDADE DE PRODUTOS NA TABELA DELTA:")
 
-        produtos = carregar_produtos()
+        # ----------------------------------------------------
+        # RESULTADO
+        # ----------------------------------------------------
 
-        print(len(produtos))
+        return render_template(
+            "resultado.html",
+            dados=dados,
+            nome_arquivo=nome_arquivo,
+        )
 
     except Exception as erro:
 
         print()
-        print(f"Erro: {erro}")
+        print(
+            "ERRO DURANTE A ANÁLISE:"
+        )
+        print(
+            repr(erro)
+        )
 
+        return render_template(
+            "erro.html",
+            erro=str(erro)
+        )
+
+
+# ============================================================
+# DOWNLOAD DO BLOCO DE NOTAS
+# ============================================================
+
+@app.route("/download")
+def download():
+
+    caminho_saida = (
+        PASTA_SAIDA /
+        "bloco_notas.txt"
+    )
+
+    if not caminho_saida.exists():
+
+        return render_template(
+            "erro.html",
+            erro=(
+                "O bloco de notas ainda "
+                "não foi gerado."
+            )
+        ), 404
+
+    return send_file(
+        caminho_saida,
+        as_attachment=True,
+        download_name="bloco_notas.txt",
+        mimetype="text/plain",
+    )
+
+
+# ============================================================
+# EXECUTAR
+# ============================================================
 
 if __name__ == "__main__":
-    main()
+
+    app.run(
+        debug=True
+    )

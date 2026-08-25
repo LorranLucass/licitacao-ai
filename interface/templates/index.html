@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>LICITA PDF</title>
+
+    <link
+        href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+        rel="stylesheet"
+    >
+
+    <link
+        rel="stylesheet"
+        href="{{ url_for('static', filename='css/style.css') }}"
+    >
+
+</head>
+
+
+<body>
+
+<div class="container py-5">
+
+    <!-- LOGO -->
+
+    <div class="text-center mb-5">
+
+        <h1 class="logo">
+            LICITA PDF
+        </h1>
+
+        <p class="slogan">
+            Inteligência para licitações.
+        </p>
+
+    </div>
+
+
+    <!-- CARD -->
+
+    <div class="row justify-content-center">
+
+        <div class="col-md-8 col-lg-6">
+
+            <div class="card shadow-sm">
+
+                <div class="card-body p-4">
+
+                    <h4 class="mb-3">
+                        Analisar edital
+                    </h4>
+
+                    <p class="text-muted">
+                        Selecione o arquivo PDF do edital
+                        para iniciar a análise automática.
+                    </p>
+
+
+                    <form
+                        action="/analisar"
+                        method="POST"
+                        enctype="multipart/form-data"
+                        id="formulario"
+                    >
+
+                        <div class="mb-3">
+
+                            <label
+                                for="arquivo"
+                                class="form-label"
+                            >
+                                Edital PDF
+                            </label>
+
+                            <input
+                                type="file"
+                                class="form-control"
+                                id="arquivo"
+                                name="arquivo"
+                                accept=".pdf"
+                                required
+                            >
+
+                        </div>
+
+
+                        <button
+                            type="submit"
+                            class="btn btn-primary w-100"
+                            id="botao-analisar"
+                        >
+                            Analisar edital
+                        </button>
+
+                    </form>
+
+
+                    <!-- CARREGANDO -->
+
+                    <div
+                        id="carregando"
+                        class="text-center mt-4 d-none"
+                    >
+
+                        <div
+                            class="spinner-border text-primary"
+                            role="status"
+                        >
+                        </div>
+
+                        <p class="mt-3 mb-1">
+                            Analisando edital...
+                        </p>
+
+                        <small class="text-muted">
+                            Extraindo informações e procurando
+                            produtos compatíveis.
+                        </small>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+<script>
+
+const formulario =
+    document.getElementById(
+        "formulario"
+    );
+
+const botao =
+    document.getElementById(
+        "botao-analisar"
+    );
+
+const carregando =
+    document.getElementById(
+        "carregando"
+    );
+
+
+formulario.addEventListener(
+    "submit",
+    function () {
+
+        botao.disabled = true;
+
+        botao.innerText =
+            "Processando...";
+
+        carregando.classList.remove(
+            "d-none"
+        );
+
+    }
+);
+
+</script>
+
+
+<script
+    src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+>
+</script>
+
+</body>
+
+</html>

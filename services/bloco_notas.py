@@ -1,4 +1,5 @@
 from pathlib import Path
+import re
 
 
 def formatar_moeda(valor):
@@ -42,11 +43,45 @@ def converter_quantidade(valor):
                 .replace(",", ".")
             )
         )
+
     except (TypeError, ValueError):
         return 0
 
 
-def gerar_bloco_notas(dados: dict, caminho_saida: str):
+def extrair_modelo(produto):
+    """
+    Extrai somente o modelo final do produto.
+
+    Exemplo:
+
+    MONITOR 24" GAMER LED FULL HD HQ - 24HQ-LED
+
+    Resultado:
+
+    HQ - 24HQ-LED
+    """
+
+    if not produto:
+        return ""
+
+    texto = str(produto).strip()
+
+    resultado = re.search(
+        r"(HQ\s*-\s*.+)$",
+        texto,
+        re.IGNORECASE
+    )
+
+    if resultado:
+        return resultado.group(1).strip()
+
+    return texto
+
+
+def gerar_bloco_notas(
+    dados: dict,
+    caminho_saida: str
+):
 
     linhas = []
 
@@ -55,7 +90,7 @@ def gerar_bloco_notas(dados: dict, caminho_saida: str):
     # ==================================================
 
     linhas.append("================================")
-    linhas.append("             LICITAÇÃO")
+    linhas.append("LICITAÇÃO")
     linhas.append("================================")
     linhas.append("")
 
@@ -97,15 +132,36 @@ def gerar_bloco_notas(dados: dict, caminho_saida: str):
 
     linhas.append("")
 
-    adesao = dados.get("adesao_carona", "")
+    # ==================================================
+    # ADESÃO / CARONA
+    # ==================================================
 
-    texto_adesao = str(adesao).strip().lower()
+    adesao = dados.get(
+        "adesao_carona",
+        ""
+    )
 
-    if texto_adesao in ["sim", "s"]:
+    texto_adesao = str(
+        adesao
+    ).strip().lower()
+
+    if texto_adesao in [
+        "sim",
+        "s"
+    ]:
+
         adesao_saida = "SIM"
-    elif texto_adesao in ["não", "nao", "n"]:
+
+    elif texto_adesao in [
+        "não",
+        "nao",
+        "n"
+    ]:
+
         adesao_saida = "NÃO"
+
     else:
+
         adesao_saida = adesao
 
     linhas.append(
@@ -114,30 +170,75 @@ def gerar_bloco_notas(dados: dict, caminho_saida: str):
 
     linhas.append("")
 
-    proposta = dados.get("proposta_validade", "")
-    entrega = dados.get("entrega_fornecimento", "")
-    pagamento = dados.get("pagamento", "")
+    # ==================================================
+    # PRAZOS
+    # ==================================================
 
-    proposta = proposta if str(proposta).strip() else "CONFORME EDITAL"
-    entrega = entrega if str(entrega).strip() else "CONFORME EDITAL"
-    pagamento = pagamento if str(pagamento).strip() else "CONFORME EDITAL"
+    proposta = dados.get(
+        "proposta_validade",
+        ""
+    )
+
+    entrega = dados.get(
+        "entrega_fornecimento",
+        ""
+    )
+
+    pagamento = dados.get(
+        "pagamento",
+        ""
+    )
+
+    proposta = (
+        proposta
+        if str(proposta).strip()
+        else "CONFORME EDITAL"
+    )
+
+    entrega = (
+        entrega
+        if str(entrega).strip()
+        else "CONFORME EDITAL"
+    )
+
+    pagamento = (
+        pagamento
+        if str(pagamento).strip()
+        else "CONFORME EDITAL"
+    )
 
     linhas.append(
         f"PROPOSTA/VALIDADE: {proposta}"
-        + ("" if proposta == "CONFORME EDITAL" else " DIAS")
+        + (
+            ""
+            if proposta == "CONFORME EDITAL"
+            else " DIAS"
+        )
     )
 
     linhas.append(
         f"ENTREGA/FORNECIMENTO: {entrega}"
-        + ("" if entrega == "CONFORME EDITAL" else " DIAS")
+        + (
+            ""
+            if entrega == "CONFORME EDITAL"
+            else " DIAS"
+        )
     )
 
     linhas.append(
         f"PAGAMENTO: {pagamento}"
-        + ("" if pagamento == "CONFORME EDITAL" else " DIAS")
+        + (
+            ""
+            if pagamento == "CONFORME EDITAL"
+            else " DIAS"
+        )
     )
 
     linhas.append("")
+
+    # ==================================================
+    # INTERVALO / REDUÇÃO
+    # ==================================================
 
     linhas.append(
         "INTERVALO/REDUÇÃO - "
@@ -150,7 +251,10 @@ def gerar_bloco_notas(dados: dict, caminho_saida: str):
     # ATENÇÃO
     # ==================================================
 
-    atencao = dados.get("atencao", {})
+    atencao = dados.get(
+        "atencao",
+        {}
+    )
 
     if not isinstance(atencao, dict):
         atencao = {}
@@ -186,18 +290,30 @@ def gerar_bloco_notas(dados: dict, caminho_saida: str):
     valor_total_proposta = 0.0
     valor_custo_total = 0.0
 
-    for item in dados.get("itens", []):
+    for item in dados.get(
+        "itens",
+        []
+    ):
 
         quantidade = converter_quantidade(
-            item.get("quantidade", 0)
+            item.get(
+                "quantidade",
+                0
+            )
         )
 
         custo = converter_numero(
-            item.get("custo", 0)
+            item.get(
+                "custo",
+                0
+            )
         )
 
         minimo = converter_numero(
-            item.get("minimo_feirao", 0)
+            item.get(
+                "minimo_feirao",
+                0
+            )
         )
 
         valor_unitario = item.get(
@@ -210,7 +326,9 @@ def gerar_bloco_notas(dados: dict, caminho_saida: str):
 
         tem_estimado = (
             valor_unitario is not None
-            and str(valor_unitario).strip() != ""
+            and str(
+                valor_unitario
+            ).strip() != ""
         )
 
         # ==================================================
@@ -219,19 +337,32 @@ def gerar_bloco_notas(dados: dict, caminho_saida: str):
 
         marca = "HQ"
 
+        # Primeiro tenta o novo campo "modelo"
         modelo = item.get(
-            "modelo_tabela",
+            "modelo",
             ""
         )
 
-        # Caso a tabela ainda esteja usando o campo produto
+        # Compatibilidade com versão anterior
         if not modelo:
+
+            modelo = item.get(
+                "modelo_tabela",
+                ""
+            )
+
+        # Se ainda não encontrar,
+        # extrai do nome completo do produto.
+        if not modelo:
+
             produto = item.get(
                 "produto_tabela",
                 ""
             )
 
-            modelo = produto
+            modelo = extrair_modelo(
+                produto
+            )
 
         fabricante = "BELMICRO"
 
@@ -247,7 +378,8 @@ def gerar_bloco_notas(dados: dict, caminho_saida: str):
         linhas.append("")
 
         linhas.append(
-            f"QUANTIDADE: {item.get('quantidade', '')}"
+            f"QUANTIDADE: "
+            f"{item.get('quantidade', '')}"
         )
 
         linhas.append("")
@@ -276,16 +408,28 @@ def gerar_bloco_notas(dados: dict, caminho_saida: str):
                 valor_unitario
             )
 
-            if valor_total is not None and str(valor_total).strip():
+            if (
+                valor_total is not None
+                and str(
+                    valor_total
+                ).strip()
+            ):
+
                 estimado_total = converter_numero(
                     valor_total
                 )
+
             else:
+
                 estimado_total = (
-                    estimado_unitario * quantidade
+                    estimado_unitario
+                    * quantidade
                 )
 
-            linhas.append("COM ESTIMADO:")
+            linhas.append(
+                "COM ESTIMADO:"
+            )
+
             linhas.append("")
 
             linhas.append(
@@ -303,14 +447,20 @@ def gerar_bloco_notas(dados: dict, caminho_saida: str):
                 f"{formatar_moeda(custo)}"
             )
 
-            custo_total = custo * quantidade
+            custo_total = (
+                custo
+                * quantidade
+            )
 
             linhas.append(
                 f"CUSTO TOTAL: "
                 f"{formatar_moeda(custo_total)}"
             )
 
-            minimo_total = minimo * quantidade
+            minimo_total = (
+                minimo
+                * quantidade
+            )
 
             linhas.append(
                 f"MÍNIMO UNITÁRIO: "
@@ -322,8 +472,9 @@ def gerar_bloco_notas(dados: dict, caminho_saida: str):
                 f"{formatar_moeda(minimo_total)}"
             )
 
-            # Para proposta, usamos o estimado
-            valor_total_proposta += estimado_total
+            valor_total_proposta += (
+                estimado_total
+            )
 
         # ==================================================
         # SEM ESTIMADO
@@ -331,14 +482,31 @@ def gerar_bloco_notas(dados: dict, caminho_saida: str):
 
         else:
 
-            custo_total = custo * quantidade
-            minimo_total = minimo * quantidade
+            custo_total = (
+                custo
+                * quantidade
+            )
+
+            minimo_total = (
+                minimo
+                * quantidade
+            )
 
             # CUSTO + 60%
-            lancar_unitario = custo * 1.60
-            lancar_total = lancar_unitario * quantidade
+            lancar_unitario = (
+                custo
+                * 1.60
+            )
 
-            linhas.append("SEM ESTIMADO:")
+            lancar_total = (
+                lancar_unitario
+                * quantidade
+            )
+
+            linhas.append(
+                "SEM ESTIMADO:"
+            )
+
             linhas.append("")
 
             linhas.append(
@@ -371,15 +539,25 @@ def gerar_bloco_notas(dados: dict, caminho_saida: str):
                 f"{formatar_moeda(lancar_total)}"
             )
 
-            valor_total_proposta += lancar_total
+            valor_total_proposta += (
+                lancar_total
+            )
 
-        # Soma custo
+        # ==================================================
+        # CUSTO TOTAL GERAL
+        # ==================================================
+
         valor_custo_total += (
-            custo * quantidade
+            custo
+            * quantidade
         )
 
         linhas.append("")
-        linhas.append("--------------------------------")
+
+        linhas.append(
+            "--------------------------------"
+        )
+
         linhas.append("")
 
     # ==================================================
@@ -400,7 +578,9 @@ def gerar_bloco_notas(dados: dict, caminho_saida: str):
     # SALVAR
     # ==================================================
 
-    arquivo = Path(caminho_saida)
+    arquivo = Path(
+        caminho_saida
+    )
 
     arquivo.parent.mkdir(
         parents=True,
@@ -411,3 +591,4 @@ def gerar_bloco_notas(dados: dict, caminho_saida: str):
         "\n".join(linhas),
         encoding="utf-8"
     )
+    

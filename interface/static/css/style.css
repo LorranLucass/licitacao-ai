@@ -1,0 +1,54 @@
+body {
+    background-color: #f5f7fb;
+    color: #212529;
+}
+
+
+.logo {
+    font-weight: 800;
+    letter-spacing: -1px;
+    margin-bottom: 5px;
+}
+
+
+.slogan {
+    color: #6c757d;
+    margin-bottom: 0;
+}
+
+
+.card {
+    border: none;
+    border-radius: 14px;
+}
+
+
+.form-control {
+    padding: 12px;
+}
+
+
+.btn {
+    border-radius: 8px;
+}
+
+
+strong {
+    display: block;
+    margin-bottom: 4px;
+}
+
+
+.border {
+    border-color: #dee2e6 !important;
+}
+
+
+@media (max-width: 768px) {
+
+    .container {
+        padding-left: 18px;
+        padding-right: 18px;
+    }
+
+}

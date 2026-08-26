@@ -222,8 +222,13 @@
                 <hr>
 
                 <p>
-                    <strong>Descrição</strong><br>
+                    <strong>Descrição do edital</strong><br>
                     {{ item.get("descricao", "") }}
+                </p>
+
+                <p>
+                    <strong>Produto compatível</strong><br>
+                    {{ item.get("produto_tabela", "") or "—" }}
                 </p>
 
                 <div class="row g-4">
@@ -351,9 +356,12 @@
                         >
                             Copiar texto
                         </button>
-                        <a href="/download" class="btn btn-success btn-sm">
-                            Baixar .txt
-                        </a>
+                        <form action="/download" method="POST" class="d-inline">
+                            <input type="hidden" name="texto_bloco" value="{{ texto_bloco }}">
+                            <button type="submit" class="btn btn-success btn-sm">
+                                Baixar .txt
+                            </button>
+                        </form>
                     </div>
 
                 </div>
@@ -386,9 +394,12 @@
                         >
                             Copiar texto
                         </button>
-                        <a href="/download-trello" class="btn btn-success btn-sm">
-                            Baixar .txt
-                        </a>
+                        <form action="/download-trello" method="POST" class="d-inline">
+                            <input type="hidden" name="texto_trello" value="{{ texto_trello }}">
+                            <button type="submit" class="btn btn-success btn-sm">
+                                Baixar .txt
+                            </button>
+                        </form>
                     </div>
 
                 </div>

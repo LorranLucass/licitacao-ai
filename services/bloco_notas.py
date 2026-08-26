@@ -372,12 +372,27 @@ def gerar_bloco_notas(
         fabricante = "BELMICRO"
 
         # ==================================================
+        # DESCRIÇÃO DO ITEM COMPATÍVEL
+        # ==================================================
+        # Usa o produto encontrado na tabela DELTA (o que
+        # realmente será vendido), não a descrição bruta do
+        # edital.
+
+        descricao_item = item.get(
+            "produto_tabela",
+            ""
+        ) or item.get(
+            "descricao",
+            ""
+        )
+
+        # ==================================================
         # ITEM
         # ==================================================
 
         linhas.append(
             f"ITEM {item.get('item', '')}: "
-            f"{item.get('descricao', '')}"
+            f"{descricao_item}"
         )
 
         linhas.append("")

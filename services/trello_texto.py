@@ -88,9 +88,21 @@ def gerar_texto_trello(dados: dict) -> str:
         valor_total_proposta += valor_referencia_unitario * quantidade
         valor_custo_total += custo * quantidade
 
+        # ====================================================
+        # DESCRIÇÃO DO ITEM COMPATÍVEL
+        # ====================================================
+        # Usa o produto encontrado na tabela DELTA (o que
+        # realmente será vendido), não a descrição bruta do
+        # edital.
+
+        descricao_item = (
+            item.get("produto_tabela", "")
+            or item.get("descricao", "")
+        )
+
         linhas.append(
             f"- ITEM {item.get('item', '')}: "
-            f"{item.get('descricao', '')}"
+            f"{descricao_item}"
         )
 
         linhas.append(

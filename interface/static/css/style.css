@@ -434,6 +434,46 @@ body {
     padding: 5px 14px;
 }
 
+.lp-tabs {
+    border-bottom: 1px solid var(--line-strong);
+    gap: 4px;
+}
+
+.lp-tabs .nav-link {
+    font-family: var(--font-mono);
+    font-size: 12.5px;
+    font-weight: 600;
+    letter-spacing: 0.6px;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+    border: none;
+    border-bottom: 2px solid transparent;
+    border-radius: 0;
+    padding: 10px 4px;
+    margin-right: 20px;
+    background: none;
+}
+
+.lp-tabs .nav-link:hover {
+    color: var(--ink);
+    border-color: var(--line-strong);
+}
+
+.lp-tabs .nav-link.active {
+    color: var(--carmine);
+    border-color: var(--carmine);
+    background: none;
+}
+
+.lp-trello-box {
+    font-family: var(--font-mono);
+    font-size: 12.5px;
+    line-height: 1.6;
+    background: var(--paper);
+    color: var(--ink-soft);
+    resize: vertical;
+}
+
 .alert-warning {
     background: #FBF3DF;
     border: 1px solid #E4C972;

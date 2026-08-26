@@ -1,19 +1,23 @@
 import os
+from io import BytesIO
 from pathlib import Path
 
 from dotenv import load_dotenv
+
 from flask import (
     Flask,
     render_template,
     request,
     send_file,
 )
+
 from werkzeug.utils import secure_filename
 
 from services.pdf_reader import extrair_texto_pdf
 from services.ai_extractor import extrair_dados_com_ia
 from services.item_matcher import filtrar_itens
 from services.bloco_notas import gerar_bloco_notas
+from services.trello_texto import gerar_texto_trello
 
 
 # ============================================================
@@ -22,9 +26,8 @@ from services.bloco_notas import gerar_bloco_notas
 
 load_dotenv()
 
-# DEBUG só fica ligado se FLASK_DEBUG=1 estiver definido no
-# ambiente (.env). Em produção, não defina essa variável.
 DEBUG = os.getenv("FLASK_DEBUG", "0") == "1"
+
 
 app = Flask(
     __name__,
@@ -33,8 +36,27 @@ app = Flask(
 )
 
 
-PASTA_SAIDA = Path("saida")
-PASTA_EDITAIS = Path("editais")
+# ============================================================
+# PASTA TEMPORÁRIA
+# ============================================================
+#
+# O Vercel possui filesystem somente para leitura no projeto.
+#
+# A única área apropriada para arquivos temporários durante
+# a execução da função é /tmp.
+#
+# Isso também funciona normalmente no Windows/local.
+#
+
+if os.name == "nt":
+    PASTA_TEMP = Path(os.getenv("TEMP", "/tmp"))
+else:
+    PASTA_TEMP = Path("/tmp")
+
+
+PASTA_SAIDA = PASTA_TEMP / "licitapdf_saida"
+PASTA_EDITAIS = PASTA_TEMP / "licitapdf_editais"
+
 
 PASTA_SAIDA.mkdir(
     parents=True,
@@ -83,23 +105,27 @@ def analisar():
 
             return render_template(
                 "erro.html",
-                erro="Nenhum arquivo PDF foi selecionado."
+                erro=(
+                    "Nenhum arquivo PDF "
+                    "foi selecionado."
+                )
             )
 
         if not arquivo.filename:
 
             return render_template(
                 "erro.html",
-                erro="O arquivo selecionado não possui nome."
+                erro=(
+                    "O arquivo selecionado "
+                    "não possui nome."
+                )
             )
 
+
         # ----------------------------------------------------
-        # VALIDAR PDF
+        # VALIDAR NOME
         # ----------------------------------------------------
 
-        # secure_filename remove ../, barras e caracteres
-        # perigosos do nome do arquivo enviado pelo usuário,
-        # evitando que ele grave fora da pasta "editais".
         nome_arquivo = secure_filename(
             arquivo.filename
         )
@@ -108,18 +134,31 @@ def analisar():
 
             return render_template(
                 "erro.html",
-                erro="Nome de arquivo inválido."
+                erro=(
+                    "Nome de arquivo inválido."
+                )
             )
 
-        if not nome_arquivo.lower().endswith(".pdf"):
+
+        # ----------------------------------------------------
+        # VALIDAR EXTENSÃO
+        # ----------------------------------------------------
+
+        if not nome_arquivo.lower().endswith(
+            ".pdf"
+        ):
 
             return render_template(
                 "erro.html",
-                erro="O arquivo precisa estar no formato PDF."
+                erro=(
+                    "O arquivo precisa estar "
+                    "no formato PDF."
+                )
             )
 
+
         # ----------------------------------------------------
-        # SALVAR PDF
+        # SALVAR PDF TEMPORARIAMENTE
         # ----------------------------------------------------
 
         caminho_pdf = (
@@ -131,6 +170,7 @@ def analisar():
             caminho_pdf
         )
 
+
         # ----------------------------------------------------
         # LER PDF
         # ----------------------------------------------------
@@ -140,13 +180,17 @@ def analisar():
         print("LICITA PDF")
         print("================================")
         print()
-        print("Lendo edital...")
+
+        print(
+            "Lendo edital..."
+        )
 
         texto = extrair_texto_pdf(
             str(caminho_pdf)
         )
 
-        if not texto.strip():
+
+        if not texto or not texto.strip():
 
             return render_template(
                 "erro.html",
@@ -156,30 +200,34 @@ def analisar():
                 )
             )
 
+
         # ----------------------------------------------------
         # IA
         # ----------------------------------------------------
 
         print(
-            "Enviando edital para análise da IA..."
+            "Enviando edital "
+            "para análise da IA..."
         )
 
         dados = extrair_dados_com_ia(
             texto
         )
 
+
         # ----------------------------------------------------
         # FILTRO DELTA
         # ----------------------------------------------------
 
         print(
-            "Procurando produtos compatíveis "
-            "na tabela DELTA..."
+            "Procurando produtos "
+            "compatíveis na tabela DELTA..."
         )
 
         dados = filtrar_itens(
             dados
         )
+
 
         # ----------------------------------------------------
         # MOSTRAR ITENS NO TERMINAL
@@ -187,7 +235,8 @@ def analisar():
 
         print()
         print(
-            "ITENS ENCONTRADOS NA TABELA DELTA:"
+            "ITENS ENCONTRADOS "
+            "NA TABELA DELTA:"
         )
         print(
             "----------------------------------"
@@ -225,6 +274,7 @@ def analisar():
 
             print()
 
+
         # ----------------------------------------------------
         # GERAR BLOCO DE NOTAS
         # ----------------------------------------------------
@@ -238,20 +288,68 @@ def analisar():
             "bloco_notas.txt"
         )
 
-        gerar_bloco_notas(
+
+        texto_bloco = gerar_bloco_notas(
             dados,
             str(caminho_bloco)
         )
 
-        print(
-            "Bloco de notas gerado com sucesso!"
-        )
+
+        # Caso a função não retorne o texto,
+        # tentamos ler o arquivo temporário.
+
+        if not texto_bloco:
+
+            if caminho_bloco.exists():
+
+                texto_bloco = (
+                    caminho_bloco
+                    .read_text(
+                        encoding="utf-8"
+                    )
+                )
+
+            else:
+
+                texto_bloco = ""
+
 
         print(
-            f"Arquivo: {caminho_bloco}"
+            "Bloco de notas "
+            "gerado com sucesso!"
         )
 
-        print()
+
+        # ----------------------------------------------------
+        # TEXTO PARA O TRELLO
+        # ----------------------------------------------------
+
+        print(
+            "Gerando texto para o Trello..."
+        )
+
+        texto_trello = gerar_texto_trello(
+            dados
+        )
+
+
+        caminho_trello = (
+            PASTA_SAIDA /
+            "texto_trello.txt"
+        )
+
+
+        caminho_trello.write_text(
+            texto_trello,
+            encoding="utf-8"
+        )
+
+
+        print(
+            "Texto para o Trello "
+            "gerado com sucesso!"
+        )
+
 
         # ----------------------------------------------------
         # RESULTADO
@@ -261,7 +359,10 @@ def analisar():
             "resultado.html",
             dados=dados,
             nome_arquivo=nome_arquivo,
+            texto_bloco=texto_bloco,
+            texto_trello=texto_trello,
         )
+
 
     except Exception as erro:
 
@@ -269,6 +370,7 @@ def analisar():
         print(
             "ERRO DURANTE A ANÁLISE:"
         )
+
         print(
             repr(erro)
         )
@@ -283,34 +385,88 @@ def analisar():
 # DOWNLOAD DO BLOCO DE NOTAS
 # ============================================================
 
-@app.route("/download")
+@app.route(
+    "/download",
+    methods=["POST"]
+)
 def download():
 
-    caminho_saida = (
-        PASTA_SAIDA /
-        "bloco_notas.txt"
+    texto = request.form.get(
+        "texto_bloco",
+        ""
     )
 
-    if not caminho_saida.exists():
+
+    if not texto:
 
         return render_template(
             "erro.html",
             erro=(
-                "O bloco de notas ainda "
-                "não foi gerado."
+                "O bloco de notas "
+                "não possui conteúdo."
             )
         ), 404
 
+
+    arquivo = BytesIO(
+        texto.encode("utf-8")
+    )
+
+    arquivo.seek(0)
+
+
     return send_file(
-        caminho_saida,
+        arquivo,
         as_attachment=True,
         download_name="bloco_notas.txt",
-        mimetype="text/plain",
+        mimetype="text/plain; charset=utf-8",
     )
 
 
 # ============================================================
-# EXECUTAR
+# DOWNLOAD DO TEXTO PARA O TRELLO
+# ============================================================
+
+@app.route(
+    "/download-trello",
+    methods=["POST"]
+)
+def download_trello():
+
+    texto = request.form.get(
+        "texto_trello",
+        ""
+    )
+
+
+    if not texto:
+
+        return render_template(
+            "erro.html",
+            erro=(
+                "O texto para o Trello "
+                "não possui conteúdo."
+            )
+        ), 404
+
+
+    arquivo = BytesIO(
+        texto.encode("utf-8")
+    )
+
+    arquivo.seek(0)
+
+
+    return send_file(
+        arquivo,
+        as_attachment=True,
+        download_name="texto_trello.txt",
+        mimetype="text/plain; charset=utf-8",
+    )
+
+
+# ============================================================
+# EXECUTAR LOCALMENTE
 # ============================================================
 
 if __name__ == "__main__":

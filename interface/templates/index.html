@@ -1,92 +1,139 @@
-{% extends "base.html" %}
+<!DOCTYPE html>
+<html lang="pt-BR">
 
-{% block title %}LicitaPDF — Analisar edital{% endblock %}
+<head>
 
-{% block content %}
+    <meta charset="UTF-8">
 
-<div class="lp-hero">
-    <div class="lp-hero__eyebrow">Triagem de editais</div>
-    <h1>Envie o edital, receba o dossiê pronto</h1>
-    <p>
-        O sistema lê o PDF, extrai os dados exigidos e cruza os itens
-        com a tabela de produtos para montar o bloco de notas da proposta.
-    </p>
-</div>
-
-<div class="lp-card">
-
-    <h4>Analisar edital</h4>
-
-    <p class="text-muted mb-4">
-        Selecione o arquivo PDF do edital para iniciar a análise automática.
-    </p>
-
-    <form
-        action="/analisar"
-        method="POST"
-        enctype="multipart/form-data"
-        id="formulario"
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
     >
 
-        <div class="mb-3">
+    <title>LICITA PDF</title>
 
-            <label for="arquivo" class="form-label">
-                Edital em PDF
-            </label>
+    <link
+        href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+        rel="stylesheet"
+    >
 
-            <input
-                type="file"
-                class="form-control"
-                id="arquivo"
-                name="arquivo"
-                accept=".pdf"
-                required
-            >
+    <link
+        rel="stylesheet"
+        href="{{ url_for('static', filename='css/style.css') }}"
+    >
 
-        </div>
+</head>
 
-        <button
-            type="submit"
-            class="btn btn-primary w-100"
-            id="botao-analisar"
-        >
-            Analisar edital
-        </button>
 
-    </form>
+<body>
 
-    <div id="carregando" class="text-center mt-4 d-none">
 
-        <div class="spinner-border text-primary" role="status"></div>
+<div class="container py-5">
 
-        <p class="mt-3 mb-1">Analisando edital...</p>
 
-        <small class="text-muted">
-            Extraindo informações e procurando produtos compatíveis.
-        </small>
+    <div class="text-center mb-5">
+
+        <h1 class="logo">
+            LICITA PDF
+        </h1>
+
+        <p class="slogan">
+            Inteligência para licitações.
+        </p>
 
     </div>
 
+
+    <div class="row justify-content-center">
+
+        <div class="col-md-8 col-lg-6">
+
+
+            <div class="card shadow-sm">
+
+                <div class="card-body p-4">
+
+
+                    <h4 class="mb-3">
+
+                        Analisar edital
+
+                    </h4>
+
+
+                    <p class="text-muted">
+
+                        Selecione o arquivo PDF
+                        do edital para iniciar
+                        a análise.
+
+                    </p>
+
+
+                    <form
+                        action="{{ url_for('analisar') }}"
+                        method="POST"
+                        enctype="multipart/form-data"
+                    >
+
+
+                        <div class="mb-3">
+
+
+                            <label
+                                for="arquivo"
+                                class="form-label"
+                            >
+
+                                Edital PDF
+
+                            </label>
+
+
+                            <input
+                                type="file"
+                                class="form-control"
+                                id="arquivo"
+                                name="arquivo"
+                                accept=".pdf,application/pdf"
+                                required
+                            >
+
+
+                        </div>
+
+
+                        <button
+                            type="submit"
+                            class="btn btn-primary w-100"
+                        >
+
+                            Analisar edital
+
+                        </button>
+
+
+                    </form>
+
+
+                </div>
+
+            </div>
+
+
+        </div>
+
+    </div>
+
+
 </div>
 
-{% endblock %}
+
+<script
+    src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+></script>
 
 
-{% block scripts %}
-<script>
+</body>
 
-const formulario = document.getElementById("formulario");
-const botao = document.getElementById("botao-analisar");
-const carregando = document.getElementById("carregando");
-
-formulario.addEventListener("submit", function () {
-
-    botao.disabled = true;
-    botao.innerText = "Processando...";
-
-    carregando.classList.remove("d-none");
-
-});
-
-</script>
-{% endblock %}
+</html>

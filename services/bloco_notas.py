@@ -179,6 +179,11 @@ def gerar_bloco_notas(
         ""
     )
 
+    unidade_validade = dados.get(
+        "proposta_validade_unidade",
+        "DIAS"
+    ) or "DIAS"
+
     entrega = dados.get(
         "entrega_fornecimento",
         ""
@@ -212,7 +217,7 @@ def gerar_bloco_notas(
         + (
             ""
             if proposta == "CONFORME EDITAL"
-            else " DIAS"
+            else f" {unidade_validade}"
         )
     )
 
@@ -578,6 +583,8 @@ def gerar_bloco_notas(
     # SALVAR
     # ==================================================
 
+    texto_final = "\n".join(linhas)
+
     arquivo = Path(
         caminho_saida
     )
@@ -588,7 +595,9 @@ def gerar_bloco_notas(
     )
 
     arquivo.write_text(
-        "\n".join(linhas),
+        texto_final,
         encoding="utf-8"
     )
+
+    return texto_final
     

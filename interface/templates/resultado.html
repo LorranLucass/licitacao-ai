@@ -40,6 +40,16 @@
                     <div>{{ dados.get("pregao_dispensa", "") }}</div>
                 </div>
 
+                <div class="col-md-3 lp-field">
+                    <strong>Modalidade</strong>
+                    <div>{{ dados.get("modalidade", "") }}</div>
+                </div>
+
+                <div class="col-md-3 lp-field">
+                    <strong>Portal</strong>
+                    <div>{{ dados.get("portal", "") }}</div>
+                </div>
+
                 <div class="col-md-6 lp-field">
                     <strong>Processo administrativo</strong>
                     <div>{{ dados.get("processo_administrativo", "") }}</div>
@@ -104,7 +114,9 @@
                     <strong>Validade da proposta</strong>
                     <div>
                         {{ dados.get("proposta_validade", "") }}
-                        {% if dados.get("proposta_validade") %} dias {% endif %}
+                        {% if dados.get("proposta_validade") %}
+                            {{ dados.get("proposta_validade_unidade", "DIAS")|lower }}
+                        {% endif %}
                     </div>
                 </div>
 
@@ -268,9 +280,172 @@
 </div>
 
 
+<!-- 05 — SAÍDAS (BLOCO DE NOTAS / TRELLO) -->
+
+<div class="lp-section">
+
+    <div class="lp-section__head">
+        <span class="lp-section__num">05</span>
+        <h4>Textos prontos para copiar</h4>
+    </div>
+
+    <div class="card">
+        <div class="card-body p-3">
+
+            <ul class="nav lp-tabs" id="abas-saida" role="tablist">
+
+                <li class="nav-item" role="presentation">
+                    <button
+                        class="nav-link active"
+                        id="aba-bloco-tab"
+                        data-bs-toggle="tab"
+                        data-bs-target="#aba-bloco"
+                        type="button"
+                        role="tab"
+                        aria-controls="aba-bloco"
+                        aria-selected="true"
+                    >
+                        Bloco de notas
+                    </button>
+                </li>
+
+                <li class="nav-item" role="presentation">
+                    <button
+                        class="nav-link"
+                        id="aba-trello-tab"
+                        data-bs-toggle="tab"
+                        data-bs-target="#aba-trello"
+                        type="button"
+                        role="tab"
+                        aria-controls="aba-trello"
+                        aria-selected="false"
+                    >
+                        Trello
+                    </button>
+                </li>
+
+            </ul>
+
+            <div class="tab-content pt-3" id="conteudo-abas-saida">
+
+                <!-- BLOCO DE NOTAS -->
+                <div
+                    class="tab-pane fade show active"
+                    id="aba-bloco"
+                    role="tabpanel"
+                    aria-labelledby="aba-bloco-tab"
+                >
+
+                    <textarea
+                        id="texto-bloco"
+                        class="form-control lp-trello-box"
+                        rows="16"
+                        readonly
+                    >{{ texto_bloco }}</textarea>
+
+                    <div class="d-flex gap-2 mt-3">
+                        <button
+                            type="button"
+                            class="btn btn-outline-primary btn-sm"
+                            data-copiar="texto-bloco"
+                        >
+                            Copiar texto
+                        </button>
+                        <a href="/download" class="btn btn-success btn-sm">
+                            Baixar .txt
+                        </a>
+                    </div>
+
+                </div>
+
+                <!-- TRELLO -->
+                <div
+                    class="tab-pane fade"
+                    id="aba-trello"
+                    role="tabpanel"
+                    aria-labelledby="aba-trello-tab"
+                >
+
+                    <p class="text-muted mb-2" style="font-size:13px;">
+                        Cole os itens direto na caixa "Adicionar item" de um
+                        checklist do Trello — uma linha vira um item.
+                    </p>
+
+                    <textarea
+                        id="texto-trello"
+                        class="form-control lp-trello-box"
+                        rows="16"
+                        readonly
+                    >{{ texto_trello }}</textarea>
+
+                    <div class="d-flex gap-2 mt-3">
+                        <button
+                            type="button"
+                            class="btn btn-outline-primary btn-sm"
+                            data-copiar="texto-trello"
+                        >
+                            Copiar texto
+                        </button>
+                        <a href="/download-trello" class="btn btn-success btn-sm">
+                            Baixar .txt
+                        </a>
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+    </div>
+
+</div>
+
+
 <div class="text-center mt-5">
-    <a href="/download" class="btn btn-success btn-lg me-2">Baixar bloco de notas</a>
     <a href="/" class="btn btn-primary btn-lg">Analisar outro edital</a>
 </div>
 
+{% endblock %}
+
+
+{% block scripts %}
+<script>
+
+document.querySelectorAll("[data-copiar]").forEach(function (botao) {
+
+    botao.addEventListener("click", function () {
+
+        const alvo = document.getElementById(
+            botao.getAttribute("data-copiar")
+        );
+
+        if (!alvo) {
+            return;
+        }
+
+        navigator.clipboard.writeText(alvo.value).then(function () {
+
+            const textoOriginal = botao.innerText;
+
+            botao.innerText = "Copiado!";
+            botao.classList.add("btn-success");
+            botao.classList.remove("btn-outline-primary");
+
+            setTimeout(function () {
+                botao.innerText = textoOriginal;
+                botao.classList.remove("btn-success");
+                botao.classList.add("btn-outline-primary");
+            }, 1800);
+
+        }).catch(function () {
+
+            alvo.select();
+
+        });
+
+    });
+
+});
+
+</script>
 {% endblock %}

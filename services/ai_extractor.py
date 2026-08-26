@@ -39,7 +39,10 @@ REGRAS GERAIS
 
 4. ENTREGA/FORNECIMENTO deve conter somente o número de dias.
 
-5. PROPOSTA/VALIDADE deve conter somente o número de dias.
+5. PROPOSTA/VALIDADE deve conter somente o número (sem
+   escrever a unidade dentro do próprio número). A unidade
+   (DIAS ou MESES), exatamente como aparece no edital, vai
+   no campo separado "proposta_validade_unidade".
 
 6. Se pagamento, entrega ou validade não forem encontrados,
    retorne "".
@@ -105,6 +108,28 @@ REGRA PARA PROCESSO ADMINISTRATIVO
 Exemplo:
 
 "035/2026"
+
+============================================================
+REGRA PARA PORTAL
+============================================================
+
+20a. Extraia o nome do portal/site onde o certame é
+     realizado (exemplos: AMML, Compras.gov.br, BLL, BNC,
+     Licitanet, BBMNET).
+
+20b. Retorne somente o nome do portal, sem link e sem
+     explicações.
+
+============================================================
+REGRA PARA MODALIDADE
+============================================================
+
+20c. Extraia a modalidade do certame (exemplos: PREGÃO,
+     DISPENSA, CONCORRÊNCIA, TOMADA DE PREÇOS, CONVITE).
+
+20d. Retorne somente a modalidade, sem o número do processo
+     e sem a palavra "ELETRÔNICO" a menos que faça parte do
+     nome oficial da modalidade.
 
 ============================================================
 REGRA PARA DECLARAÇÃO
@@ -242,6 +267,8 @@ Retorne exatamente um JSON com esta estrutura:
 {{
     "orgao": "",
     "pregao_dispensa": "",
+    "portal": "",
+    "modalidade": "",
     "uasg": "",
     "processo_administrativo": "",
     "data_sessao": "",
@@ -253,6 +280,7 @@ Retorne exatamente um JSON com esta estrutura:
     "adesao_carona": "",
 
     "proposta_validade": "",
+    "proposta_validade_unidade": "",
     "entrega_fornecimento": "",
     "pagamento": "",
 
@@ -329,6 +357,8 @@ EDITAL
     campos = [
         "orgao",
         "pregao_dispensa",
+        "portal",
+        "modalidade",
         "uasg",
         "processo_administrativo",
         "data_sessao",
@@ -337,6 +367,7 @@ EDITAL
         "modo_disputa",
         "adesao_carona",
         "proposta_validade",
+        "proposta_validade_unidade",
         "entrega_fornecimento",
         "pagamento",
         "intervalo_reducao",
@@ -577,6 +608,35 @@ EDITAL
             break
 
     dados["processo_administrativo"] = processo
+
+    # ========================================================
+    # NORMALIZAR UNIDADE DA VALIDADE DA PROPOSTA
+    # ========================================================
+
+    unidade_validade = str(
+        dados.get("proposta_validade_unidade", "")
+    ).strip().upper()
+
+    unidade_validade = (
+        unidade_validade
+        .replace("MESES", "MESES")
+        .replace("MÊS", "MESES")
+        .replace("MES", "MESES")
+    )
+
+    if "MES" in unidade_validade:
+        dados["proposta_validade_unidade"] = "MESES"
+
+    elif "DIA" in unidade_validade:
+        dados["proposta_validade_unidade"] = "DIAS"
+
+    elif dados.get("proposta_validade"):
+        # Não veio unidade clara, mas há um número:
+        # assume dias, que é o mais comum em editais.
+        dados["proposta_validade_unidade"] = "DIAS"
+
+    else:
+        dados["proposta_validade_unidade"] = ""
 
     # ========================================================
     # NORMALIZAR ITENS

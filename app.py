@@ -1,11 +1,14 @@
+import os
 from pathlib import Path
 
+from dotenv import load_dotenv
 from flask import (
     Flask,
     render_template,
     request,
     send_file,
 )
+from werkzeug.utils import secure_filename
 
 from services.pdf_reader import extrair_texto_pdf
 from services.ai_extractor import extrair_dados_com_ia
@@ -16,6 +19,12 @@ from services.bloco_notas import gerar_bloco_notas
 # ============================================================
 # CONFIGURAÇÃO
 # ============================================================
+
+load_dotenv()
+
+# DEBUG só fica ligado se FLASK_DEBUG=1 estiver definido no
+# ambiente (.env). Em produção, não defina essa variável.
+DEBUG = os.getenv("FLASK_DEBUG", "0") == "1"
 
 app = Flask(
     __name__,
@@ -88,7 +97,19 @@ def analisar():
         # VALIDAR PDF
         # ----------------------------------------------------
 
-        nome_arquivo = arquivo.filename
+        # secure_filename remove ../, barras e caracteres
+        # perigosos do nome do arquivo enviado pelo usuário,
+        # evitando que ele grave fora da pasta "editais".
+        nome_arquivo = secure_filename(
+            arquivo.filename
+        )
+
+        if not nome_arquivo:
+
+            return render_template(
+                "erro.html",
+                erro="Nome de arquivo inválido."
+            )
 
         if not nome_arquivo.lower().endswith(".pdf"):
 
@@ -295,5 +316,5 @@ def download():
 if __name__ == "__main__":
 
     app.run(
-        debug=True
+        debug=DEBUG
     )

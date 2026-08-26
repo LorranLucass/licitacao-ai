@@ -563,7 +563,7 @@ input:focus-visible {
 }
 
 @media (prefers-reduced-motion: reduce) {
-    * {
+    *:not(.spinner-border) {
         transition: none !important;
         animation: none !important;
     }

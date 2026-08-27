@@ -1,3 +1,4 @@
+
 /* ============================================================
    LICITAPDF — SISTEMA DE DESIGN
    Conceito: documento oficial + selo de aprovação.
@@ -62,6 +63,12 @@ body {
     display: flex;
     align-items: center;
     justify-content: space-between;
+}
+
+.lp-topbar__nav {
+    display: flex;
+    align-items: center;
+    gap: 10px;
 }
 
 .lp-brand {
@@ -568,3 +575,412 @@ input:focus-visible {
         animation: none !important;
     }
 }
+
+
+/* ============================================================
+   BOTÃO DE TEMA — CLARO / ESCURO
+   ============================================================ */
+
+.lp-theme-toggle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+
+    padding: 6px 12px;
+
+    border: 1px solid #384153;
+    border-radius: 999px;
+
+    background: transparent;
+    color: #C7CCD6;
+
+    font-family: var(--font-mono);
+    font-size: 11px;
+    font-weight: 600;
+
+    cursor: pointer;
+
+    transition:
+        background-color 0.2s ease,
+        border-color 0.2s ease,
+        color 0.2s ease,
+        transform 0.15s ease;
+}
+
+.lp-theme-toggle:hover {
+    background-color: rgba(255, 255, 255, 0.08);
+    border-color: #A02334;
+    color: #FFFFFF;
+}
+
+.lp-theme-toggle:active {
+    transform: scale(0.97);
+}
+
+#theme-icon {
+    font-size: 14px;
+    line-height: 1;
+}
+
+#theme-text {
+    white-space: nowrap;
+}
+
+
+/* ============================================================
+   TEMA ESCURO
+   ============================================================ */
+
+html[data-theme="dark"] {
+    --ink: #F4F5F1;
+    --ink-soft: #C7CCD6;
+    --ink-faint: #9AA3B2;
+
+    --paper: #101826;
+    --paper-raised: #182131;
+
+    --line: #303A4A;
+    --line-strong: #465164;
+
+    --carmine: #E2828C;
+    --carmine-soft: #3A2026;
+
+    --forest: #72B18F;
+    --forest-soft: #20382D;
+}
+
+
+/* Fundo */
+
+html[data-theme="dark"] body {
+    background-color: var(--paper);
+
+    background-image:
+        linear-gradient(
+            rgba(70, 81, 100, 0.22) 1px,
+            transparent 1px
+        ),
+        linear-gradient(
+            90deg,
+            rgba(70, 81, 100, 0.22) 1px,
+            transparent 1px
+        );
+
+    color: var(--ink);
+}
+
+
+/* Topo */
+
+html[data-theme="dark"] .lp-topbar {
+    background-color: #0B111C;
+    border-bottom-color: var(--carmine);
+}
+
+
+/* Marca */
+
+html[data-theme="dark"] .lp-brand__word {
+    color: #F4F5F1;
+}
+
+html[data-theme="dark"] .lp-brand__tag {
+    color: #9AA3B2;
+}
+
+
+/* Badge */
+
+html[data-theme="dark"] .lp-topbar__badge {
+    color: #C7CCD6;
+    border-color: #384153;
+}
+
+
+/* Botão de tema */
+
+html[data-theme="dark"] .lp-theme-toggle {
+    color: #F4F5F1;
+    border-color: #465164;
+}
+
+html[data-theme="dark"] .lp-theme-toggle:hover {
+    background-color: rgba(255, 255, 255, 0.08);
+    border-color: var(--carmine);
+    color: var(--carmine);
+}
+
+
+/* Cartões */
+
+html[data-theme="dark"] .lp-card,
+html[data-theme="dark"] .lp-item,
+html[data-theme="dark"] .lp-error-card,
+html[data-theme="dark"] .card {
+    background-color: var(--paper-raised);
+    border-color: var(--line);
+}
+
+
+/* Cartão principal mantém a faixa vermelha */
+
+html[data-theme="dark"] .lp-card {
+    border-top-color: var(--carmine);
+}
+
+html[data-theme="dark"] .lp-error-card {
+    border-top-color: var(--carmine);
+}
+
+
+/* Textos */
+
+html[data-theme="dark"] .lp-hero h1,
+html[data-theme="dark"] .lp-card h4,
+html[data-theme="dark"] .lp-result-header h2,
+html[data-theme="dark"] .lp-section__head h4,
+html[data-theme="dark"] .lp-item h5,
+html[data-theme="dark"] .lp-error-card h2 {
+    color: var(--ink);
+}
+
+html[data-theme="dark"] .lp-hero p {
+    color: var(--ink-soft);
+}
+
+html[data-theme="dark"] .text-muted,
+html[data-theme="dark"] .lp-card .text-muted {
+    color: var(--ink-faint) !important;
+}
+
+html[data-theme="dark"] .form-label {
+    color: var(--ink-soft);
+}
+
+
+/* Campos */
+
+html[data-theme="dark"] .form-control {
+    background-color: #111927;
+    color: var(--ink);
+    border-color: var(--line-strong);
+}
+
+html[data-theme="dark"] .form-control::placeholder {
+    color: #7E8796;
+}
+
+html[data-theme="dark"] .form-control:focus {
+    background-color: #111927;
+    color: var(--ink);
+    border-color: var(--carmine);
+    box-shadow: 0 0 0 3px var(--carmine-soft);
+}
+
+html[data-theme="dark"] .form-control::file-selector-button {
+    background-color: #202A3A;
+    color: var(--ink);
+    border-color: var(--line-strong);
+}
+
+
+/* Botão principal */
+
+html[data-theme="dark"] .btn-primary {
+    background-color: #F4F5F1;
+    border-color: #F4F5F1;
+    color: #101826;
+}
+
+html[data-theme="dark"] .btn-primary:hover,
+html[data-theme="dark"] .btn-primary:focus {
+    background-color: #DDE0D8;
+    border-color: #DDE0D8;
+    color: #101826;
+}
+
+
+/* Botão outline */
+
+html[data-theme="dark"] .btn-outline-primary {
+    color: var(--ink);
+    border-color: var(--line-strong);
+}
+
+html[data-theme="dark"] .btn-outline-primary:hover {
+    background-color: var(--ink);
+    border-color: var(--ink);
+    color: var(--paper);
+}
+
+
+/* Botão sucesso */
+
+html[data-theme="dark"] .btn-success {
+    background-color: var(--forest);
+    border-color: var(--forest);
+    color: #FFFFFF;
+}
+
+html[data-theme="dark"] .btn-success:hover,
+html[data-theme="dark"] .btn-success:focus {
+    background-color: #5E9978;
+    border-color: #5E9978;
+}
+
+
+/* Carregamento */
+
+html[data-theme="dark"] #carregando p {
+    color: var(--ink);
+}
+
+html[data-theme="dark"] #carregando small {
+    color: var(--ink-faint) !important;
+}
+
+
+/* Resultado */
+
+html[data-theme="dark"] .lp-result-header {
+    border-bottom-color: var(--line-strong);
+}
+
+html[data-theme="dark"] .lp-result-header .text-muted {
+    color: var(--ink-faint) !important;
+}
+
+html[data-theme="dark"] .lp-section__head p {
+    color: var(--ink-faint);
+}
+
+html[data-theme="dark"] .lp-field strong,
+html[data-theme="dark"] .lp-item p strong {
+    color: var(--ink-faint);
+}
+
+html[data-theme="dark"] .lp-field div {
+    color: var(--ink);
+}
+
+
+/* Itens */
+
+html[data-theme="dark"] .lp-item hr {
+    border-color: var(--line);
+}
+
+html[data-theme="dark"] .lp-item-count {
+    color: var(--ink);
+    background-color: var(--carmine-soft);
+    border-color: var(--carmine);
+}
+
+
+/* Selo compatível */
+
+html[data-theme="dark"] .lp-stamp {
+    color: var(--forest);
+    border-color: var(--forest);
+}
+
+
+/* Abas */
+
+html[data-theme="dark"] .lp-tabs {
+    border-bottom-color: var(--line-strong);
+}
+
+html[data-theme="dark"] .lp-tabs .nav-link {
+    color: var(--ink-faint);
+}
+
+html[data-theme="dark"] .lp-tabs .nav-link:hover {
+    color: var(--ink);
+    border-color: var(--line-strong);
+}
+
+html[data-theme="dark"] .lp-tabs .nav-link.active {
+    color: var(--carmine);
+    border-color: var(--carmine);
+}
+
+
+/* Trello */
+
+html[data-theme="dark"] .lp-trello-box {
+    background-color: #111927;
+    color: var(--ink-soft);
+    border-color: var(--line-strong);
+}
+
+
+/* Alertas */
+
+html[data-theme="dark"] .alert-warning {
+    background: #332D1C;
+    border-color: #806F32;
+    color: #E9D990;
+}
+
+html[data-theme="dark"] .alert-danger {
+    background: #3A2026;
+    border-color: var(--carmine);
+    color: #F0A8AF;
+}
+
+
+/* Rodapé */
+
+html[data-theme="dark"] .lp-footer {
+    background-color: #0B111C;
+    border-top-color: var(--line);
+}
+
+html[data-theme="dark"] .lp-footer__inner {
+    color: var(--ink-faint);
+}
+
+
+/* ============================================================
+   TRANSIÇÃO SUAVE DO TEMA
+   ============================================================ */
+
+body,
+.lp-card,
+.lp-item,
+.lp-error-card,
+.card,
+.lp-footer,
+.form-control,
+.lp-trello-box,
+.lp-theme-toggle {
+    transition:
+        background-color 0.2s ease,
+        color 0.2s ease,
+        border-color 0.2s ease;
+}
+
+
+/* ============================================================
+   MOBILE — BOTÃO DE TEMA
+   ============================================================ */
+
+@media (max-width: 600px) {
+
+    .lp-theme-toggle {
+        padding: 7px 9px;
+    }
+
+    #theme-text {
+        display: none;
+    }
+
+    .lp-topbar__inner {
+        padding-left: 16px;
+        padding-right: 16px;
+    }
+
+}
+

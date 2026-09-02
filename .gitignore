@@ -17,3 +17,19 @@ saida/*
 Thumbs.db
 dados/*.xlsx
 editais/*.pdf
+# Segurança
+.env
+
+# Caches do Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Diretórios de Dados (Evita subir PDFs e planilhas grandes)
+dados/
+editais/
+
+# Ambientes Virtuais
+venv/
+env/

@@ -232,31 +232,93 @@ REGRA PARA CAUÇÃO
 REGRA PARA GARANTIA
 ============================================================
 
-41. Extraia a informação referente à garantia.
+41. Procure especificamente por estas modalidades de
+    garantia no edital e seus anexos:
 
-42. Faça um resumo objetivo da garantia.
+    - Garantia Contratual
+    - Garantia de Execução
+    - Garantia On-site
 
-43. Não copie o texto inteiro do edital.
+42. NÃO confunda essas modalidades com uma simples garantia
+    comercial do produto (ex: "garantia do fabricante de 12
+    meses"). Isso NÃO conta como garantia contratual, de
+    execução ou on-site.
 
-44. Se não houver exigência de garantia, informe de forma
-    resumida que não há exigência.
+43. O campo "garantia" deve conter SOMENTE:
+
+    "COM"
+    ou
+    "SEM"
+
+44. Se o edital exigir uma ou mais dessas modalidades,
+    retorne "COM" e liste, em "garantia_tipos", exatamente
+    quais delas foram exigidas (usando os nomes acima,
+    exatamente como escritos).
+
+45. Se nenhuma dessas modalidades for exigida (mesmo que
+    exista garantia comercial do produto), retorne "SEM" e
+    "garantia_tipos": [].
+
+Exemplo (com garantia de execução):
+
+"garantia": "COM",
+"garantia_tipos": ["Garantia de Execução"]
+
+Exemplo (sem nenhuma das três):
+
+"garantia": "SEM",
+"garantia_tipos": []
+
+============================================================
+REGRA PARA OBJETO
+============================================================
+
+45a. Extraia um resumo objetivo do objeto da licitação
+     (o que está sendo contratado/adquirido), em uma frase.
+
+45b. Não copie o texto inteiro do edital.
+
+Exemplo:
+
+"Aquisição de monitores e televisores para uso nas
+unidades administrativas do município."
+
+============================================================
+REGRA PARA ADESÃO / CARONA
+============================================================
+
+45c. O campo "adesao_carona" deve conter SOMENTE:
+
+     "SIM"
+     ou
+     "NÃO"
+
+45d. Interprete frases do tipo:
+
+     "Será permitida a adesão" -> "SIM"
+     "Permitida carona" -> "SIM"
+     "Não será permitida adesão" -> "NÃO"
+     "Não será permitida carona" -> "NÃO"
+     "Não se aplica" -> "NÃO"
+
+45e. Não escreva explicações, apenas "SIM" ou "NÃO".
 
 ============================================================
 REGRA PARA ITENS
 ============================================================
 
-45. Extraia todos os itens encontrados no edital.
+51. Extraia todos os itens encontrados no edital.
 
-46. Não descarte itens por tipo de produto.
+52. Não descarte itens por tipo de produto.
 
-47. Não descarte itens por tamanho.
+53. Não descarte itens por tamanho.
 
-48. Não tente escolher produtos da tabela DELTA.
+54. Não tente escolher produtos da tabela DELTA.
 
-49. A seleção do produto compatível será feita posteriormente
+55. A seleção do produto compatível será feita posteriormente
     pelo sistema.
 
-50. Preserve a descrição técnica completa do item.
+56. Preserve a descrição técnica completa do item.
 
 ============================================================
 FORMATO OBRIGATÓRIO
@@ -266,6 +328,7 @@ Retorne exatamente um JSON com esta estrutura:
 
 {{
     "orgao": "",
+    "objeto": "",
     "pregao_dispensa": "",
     "portal": "",
     "modalidade": "",
@@ -291,7 +354,8 @@ Retorne exatamente um JSON com esta estrutura:
         "declaracao": "",
         "identificacao": "",
         "caucao": "",
-        "garantia": ""
+        "garantia": "",
+        "garantia_tipos": []
     }},
 
     "itens": [
@@ -356,6 +420,7 @@ EDITAL
 
     campos = [
         "orgao",
+        "objeto",
         "pregao_dispensa",
         "portal",
         "modalidade",
@@ -399,10 +464,15 @@ EDITAL
         "declaracao",
         "identificacao",
         "caucao",
-        "garantia"
+        "garantia",
+        "garantia_tipos"
     ]
 
     for campo in campos_atencao:
+
+        if campo == "garantia_tipos" and campo not in dados["atencao"]:
+            dados["atencao"][campo] = []
+            continue
 
         if campo not in dados["atencao"]:
             dados["atencao"][campo] = ""
@@ -534,15 +604,101 @@ EDITAL
         dados["atencao"]["caucao"] = ""
 
     # ========================================================
-    # NORMALIZAR GARANTIA
+    # NORMALIZAR TIPOS DE GARANTIA
+    # ========================================================
+    # Somente estas três modalidades são reconhecidas. Uma
+    # garantia comercial de produto não entra aqui.
+
+    TIPOS_GARANTIA_VALIDOS = [
+        "Garantia Contratual",
+        "Garantia de Execução",
+        "Garantia On-site",
+    ]
+
+    tipos_brutos = dados["atencao"].get("garantia_tipos", [])
+
+    if not isinstance(tipos_brutos, list):
+        tipos_brutos = [tipos_brutos] if tipos_brutos else []
+
+    tipos_normalizados = []
+
+    for tipo_bruto in tipos_brutos:
+
+        tipo_texto = str(tipo_bruto).strip().upper()
+
+        for tipo_valido in TIPOS_GARANTIA_VALIDOS:
+
+            if tipo_valido.upper() == tipo_texto:
+
+                if tipo_valido not in tipos_normalizados:
+                    tipos_normalizados.append(tipo_valido)
+
+                break
+
+    dados["atencao"]["garantia_tipos"] = tipos_normalizados
+
+    # ========================================================
+    # NORMALIZAR GARANTIA (COM / SEM)
     # ========================================================
 
     garantia = str(
         dados["atencao"].get("garantia", "")
-    ).strip()
+    ).strip().upper()
 
-    if not garantia:
-        dados["atencao"]["garantia"] = "NÃO"
+    if garantia in ["COM", "SIM"] or tipos_normalizados:
+        dados["atencao"]["garantia"] = "COM"
+
+    else:
+        dados["atencao"]["garantia"] = "SEM"
+
+    # Se disser "COM" mas nenhum tipo específico foi
+    # identificado, mantém "COM" (o edital exige garantia,
+    # mesmo que a modalidade exata não tenha sido reconhecida).
+
+    # ========================================================
+    # NORMALIZAR ADESÃO / CARONA
+    # ========================================================
+
+    adesao = str(
+        dados.get("adesao_carona", "")
+    ).strip().upper()
+
+    adesao_sem_acento = (
+        adesao
+        .replace("Ã", "A")
+        .replace("Á", "A")
+        .replace("Â", "A")
+    )
+
+    if any(
+        termo in adesao_sem_acento
+        for termo in [
+            "NAO SERA PERMITID",
+            "NAO PERMITID",
+            "NAO SE APLICA",
+            "NAO HAVERA",
+        ]
+    ):
+        dados["adesao_carona"] = "NÃO"
+
+    elif any(
+        termo in adesao_sem_acento
+        for termo in [
+            "SERA PERMITID",
+            "PERMITID",
+            "HAVERA",
+        ]
+    ):
+        dados["adesao_carona"] = "SIM"
+
+    elif adesao_sem_acento in ["SIM", "S"]:
+        dados["adesao_carona"] = "SIM"
+
+    elif adesao_sem_acento in ["NAO", "N"]:
+        dados["adesao_carona"] = "NÃO"
+
+    else:
+        dados["adesao_carona"] = ""
 
     # ========================================================
     # LIMPAR PREGÃO/DISPENSA

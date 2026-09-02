@@ -114,8 +114,14 @@
                     <strong>Validade da proposta</strong>
                     <div>
                         {{ dados.get("proposta_validade", "") }}
+
                         {% if dados.get("proposta_validade") %}
-                            {{ dados.get("proposta_validade_unidade", "DIAS")|lower }}
+
+                            {{ dados.get(
+                                "proposta_validade_unidade",
+                                "DIAS"
+                            )|lower }}
+
                         {% endif %}
                     </div>
                 </div>
@@ -124,7 +130,11 @@
                     <strong>Entrega</strong>
                     <div>
                         {{ dados.get("entrega_fornecimento", "") }}
-                        {% if dados.get("entrega_fornecimento") %} dias {% endif %}
+
+                        {% if dados.get("entrega_fornecimento") %}
+                            dias
+                        {% endif %}
+
                     </div>
                 </div>
 
@@ -132,7 +142,11 @@
                     <strong>Pagamento</strong>
                     <div>
                         {{ dados.get("pagamento", "") }}
-                        {% if dados.get("pagamento") %} dias {% endif %}
+
+                        {% if dados.get("pagamento") %}
+                            dias
+                        {% endif %}
+
                     </div>
                 </div>
 
@@ -160,27 +174,41 @@
 
                 <div class="col-md-3 lp-field">
                     <strong>Instalação</strong>
-                    <div>{{ atencao.get("instalacao", "") }}</div>
+                    <div>
+                        {{ atencao.get("instalacao", "") }}
+                    </div>
                 </div>
 
                 <div class="col-md-3 lp-field">
                     <strong>Declaração</strong>
-                    <div>{{ atencao.get("declaracao", "") }}</div>
+                    <div>
+                        {{ atencao.get("declaracao", "") }}
+                    </div>
                 </div>
 
                 <div class="col-md-3 lp-field">
                     <strong>Identificação</strong>
-                    <div>{{ atencao.get("identificacao", "") }}</div>
+                    <div>
+                        {{ atencao.get("identificacao", "") }}
+                    </div>
                 </div>
 
                 <div class="col-md-3 lp-field">
                     <strong>Caução</strong>
-                    <div>{{ atencao.get("caucao", "") }}</div>
+                    <div>
+                        {{ atencao.get("caucao", "") }}
+                    </div>
                 </div>
 
                 <div class="col-12 lp-field">
                     <strong>Garantia</strong>
-                    <div>{{ atencao.get("garantia", "") }}</div>
+                    <div>
+                        {{ atencao.get("garantia", "") }}
+                        {% set tipos = atencao.get("garantia_tipos", []) %}
+                        {% if tipos %}
+                            — {{ tipos|join(", ") }}
+                        {% endif %}
+                    </div>
                 </div>
 
             </div>
@@ -194,19 +222,51 @@
 
 <div class="lp-section">
 
-    <div class="lp-section__head" style="justify-content: space-between; width: 100%;">
-        <div style="display:flex; align-items:baseline; gap:12px;">
-            <span class="lp-section__num">04</span>
-            <h4>Itens compatíveis</h4>
+    <div
+        class="lp-section__head"
+        style="justify-content: space-between; width: 100%;"
+    >
+
+        <div
+            style="
+                display:flex;
+                align-items:baseline;
+                gap:12px;
+            "
+        >
+
+            <span class="lp-section__num">
+                04
+            </span>
+
+            <h4>
+                Itens compatíveis
+            </h4>
+
         </div>
+
         <span class="lp-item-count">
-            {{ dados.get("itens", [])|length }} item(ns)
+
+            {{ dados.get("itens", [])|length }}
+            item(ns)
+
         </span>
+
     </div>
 
-    <p class="text-muted mb-3" style="font-size:13px; margin-top:-8px;">
+
+    <p
+        class="text-muted mb-3"
+        style="
+            font-size:13px;
+            margin-top:-8px;
+        "
+    >
+
         Produtos cruzados com a tabela de referência.
+
     </p>
+
 
     {% if dados.get("itens", []) %}
 
@@ -214,58 +274,140 @@
 
             <div class="lp-item">
 
-                <div class="d-flex justify-content-between align-items-center">
-                    <h5>Item {{ item.get("item", "") }}</h5>
-                    <span class="lp-stamp">✓ Compatível</span>
+                <div
+                    class="d-flex justify-content-between align-items-center"
+                >
+
+                    <h5>
+                        Item {{ item.get("item", "") }}
+                    </h5>
+
+                    <span class="lp-stamp">
+                        ✓ Compatível
+                    </span>
+
                 </div>
+
 
                 <hr>
 
-                <p>
-                    <strong>Descrição do edital</strong><br>
-                    {{ item.get("descricao", "") }}
-                </p>
 
                 <p>
-                    <strong>Produto compatível</strong><br>
-                    {{ item.get("produto_tabela", "") or "—" }}
+
+                    <strong>
+                        Descrição do edital
+                    </strong>
+
+                    <br>
+
+                    {{ item.get("descricao", "") }}
+
                 </p>
+
+
+                <p>
+
+                    <strong>
+                        Produto compatível
+                    </strong>
+
+                    <br>
+
+                    {{ item.get("produto_tabela", "") or "—" }}
+
+                </p>
+
 
                 <div class="row g-4">
 
                     <div class="col-md-3 lp-field">
-                        <strong>Quantidade</strong>
-                        <div>{{ item.get("quantidade", "") }}</div>
+
+                        <strong>
+                            Quantidade
+                        </strong>
+
+                        <div>
+                            {{ item.get("quantidade", "") }}
+                        </div>
+
                     </div>
 
-                    <div class="col-md-3 lp-field">
-                        <strong>Marca</strong>
-                        <div>{{ item.get("marca_tabela", "") }}</div>
-                    </div>
 
                     <div class="col-md-3 lp-field">
-                        <strong>Modelo</strong>
-                        <div>{{ item.get("modelo", "") }}</div>
+
+                        <strong>
+                            Marca
+                        </strong>
+
+                        <div>
+                            {{ item.get("marca_tabela", "") }}
+                        </div>
+
                     </div>
 
-                    <div class="col-md-3 lp-field">
-                        <strong>Fabricante</strong>
-                        <div>{{ item.get("fabricante", "") }}</div>
-                    </div>
 
                     <div class="col-md-3 lp-field">
-                        <strong>Tamanho</strong>
-                        <div>{{ item.get("tamanho", "") }}</div>
+
+                        <strong>
+                            Modelo
+                        </strong>
+
+                        <div>
+                            {{ item.get("modelo", "") }}
+                        </div>
+
                     </div>
 
-                    <div class="col-md-3 lp-field">
-                        <strong>Custo</strong>
-                        <div>R$ {{ item.get("custo", 0) }}</div>
-                    </div>
 
                     <div class="col-md-3 lp-field">
-                        <strong>Mínimo Feirão</strong>
-                        <div>R$ {{ item.get("minimo_feirao", 0) }}</div>
+
+                        <strong>
+                            Fabricante
+                        </strong>
+
+                        <div>
+                            {{ item.get("fabricante", "") }}
+                        </div>
+
+                    </div>
+
+
+                    <div class="col-md-3 lp-field">
+
+                        <strong>
+                            Tamanho
+                        </strong>
+
+                        <div>
+                            {{ item.get("tamanho", "") }}
+                        </div>
+
+                    </div>
+
+
+                    <div class="col-md-3 lp-field">
+
+                        <strong>
+                            Custo
+                        </strong>
+
+                        <div>
+                            R$ {{ item.get("custo", 0) }}
+                        </div>
+
+                    </div>
+
+
+                    <div class="col-md-3 lp-field">
+
+                        <strong>
+                            Mínimo Feirão
+                        </strong>
+
+                        <div>
+                            R$ {{ item.get("minimo_feirao", 0) }}
+                        </div>
+
                     </div>
 
                 </div>
@@ -274,10 +416,14 @@
 
         {% endfor %}
 
+
     {% else %}
 
         <div class="alert alert-warning">
-            Nenhum produto compatível foi encontrado na tabela de referência.
+
+            Nenhum produto compatível foi encontrado
+            na tabela de referência.
+
         </div>
 
     {% endif %}
@@ -285,21 +431,145 @@
 </div>
 
 
-<!-- 05 — SAÍDAS (BLOCO DE NOTAS / TRELLO) -->
+<!-- 05 — SAÍDAS -->
 
 <div class="lp-section">
 
     <div class="lp-section__head">
-        <span class="lp-section__num">05</span>
-        <h4>Textos prontos para copiar</h4>
+
+        <span class="lp-section__num">
+            05
+        </span>
+
+        <h4>
+            Textos prontos para copiar
+        </h4>
+
     </div>
 
+
     <div class="card">
+
         <div class="card-body p-3">
 
-            <ul class="nav lp-tabs" id="abas-saida" role="tablist">
 
-                <li class="nav-item" role="presentation">
+            <!-- =====================================================
+                 PROPOSTA WORD
+            ====================================================== -->
+
+            <div
+                class="mb-4 p-3"
+                style="
+                    border:1px solid var(--bs-border-color);
+                    border-radius:10px;
+                "
+            >
+
+                <div
+                    class="d-flex justify-content-between
+                           align-items-center flex-wrap gap-3"
+                >
+
+                    <div>
+
+                        <strong>
+                            Proposta em Word
+                        </strong>
+
+                        <div
+                            class="text-muted"
+                            style="font-size:13px;"
+                        >
+
+                            {% if proposta_disponivel %}
+
+                                Documento gerado com os
+                                dados desta análise.
+
+                            {% else %}
+
+                                Gera o documento Word
+                                preenchido com os dados
+                                desta análise, a partir do
+                                seu modelo.
+
+                            {% endif %}
+
+                        </div>
+
+                        {% if erro_proposta %}
+
+                            <div
+                                class="text-danger mt-2"
+                                style="font-size:13px;"
+                            >
+
+                                {{ erro_proposta }}
+
+                            </div>
+
+                        {% endif %}
+
+                    </div>
+
+
+                    <div class="d-flex gap-2">
+
+                        <form
+                            action="/gerar-proposta"
+                            method="POST"
+                        >
+
+                            <button
+                                type="submit"
+                                class="btn btn-outline-primary"
+                            >
+
+                                {% if proposta_disponivel %}
+                                    Gerar novamente
+                                {% else %}
+                                    Gerar proposta Word
+                                {% endif %}
+
+                            </button>
+
+                        </form>
+
+                        {% if proposta_disponivel %}
+
+                            <a
+                                href="/download-proposta"
+                                class="btn btn-primary"
+                            >
+
+                                Baixar proposta Word
+
+                            </a>
+
+                        {% endif %}
+
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <!-- =====================================================
+                 ABAS
+            ====================================================== -->
+
+            <ul
+                class="nav lp-tabs"
+                id="abas-saida"
+                role="tablist"
+            >
+
+                <li
+                    class="nav-item"
+                    role="presentation"
+                >
+
                     <button
                         class="nav-link active"
                         id="aba-bloco-tab"
@@ -310,11 +580,19 @@
                         aria-controls="aba-bloco"
                         aria-selected="true"
                     >
+
                         Bloco de notas
+
                     </button>
+
                 </li>
 
-                <li class="nav-item" role="presentation">
+
+                <li
+                    class="nav-item"
+                    role="presentation"
+                >
+
                     <button
                         class="nav-link"
                         id="aba-trello-tab"
@@ -325,15 +603,24 @@
                         aria-controls="aba-trello"
                         aria-selected="false"
                     >
+
                         Trello
+
                     </button>
+
                 </li>
 
             </ul>
 
-            <div class="tab-content pt-3" id="conteudo-abas-saida">
+
+            <div
+                class="tab-content pt-3"
+                id="conteudo-abas-saida"
+            >
+
 
                 <!-- BLOCO DE NOTAS -->
+
                 <div
                     class="tab-pane fade show active"
                     id="aba-bloco"
@@ -348,25 +635,53 @@
                         readonly
                     >{{ texto_bloco }}</textarea>
 
-                    <div class="d-flex gap-2 mt-3">
+
+                    <div
+                        class="d-flex gap-2 mt-3"
+                    >
+
                         <button
                             type="button"
                             class="btn btn-outline-primary btn-sm"
                             data-copiar="texto-bloco"
                         >
+
                             Copiar texto
+
                         </button>
-                        <form action="/download" method="POST" class="d-inline">
-                            <input type="hidden" name="texto_bloco" value="{{ texto_bloco }}">
-                            <button type="submit" class="btn btn-success btn-sm">
+
+
+                        <form
+                            action="/download"
+                            method="POST"
+                            class="d-inline"
+                        >
+
+                            <input
+                                type="hidden"
+                                name="texto_bloco"
+                                value="{{ texto_bloco }}"
+                            >
+
+
+                            <button
+                                type="submit"
+                                class="btn btn-success btn-sm"
+                            >
+
                                 Baixar .txt
+
                             </button>
+
                         </form>
+
                     </div>
 
                 </div>
 
+
                 <!-- TRELLO -->
+
                 <div
                     class="tab-pane fade"
                     id="aba-trello"
@@ -374,10 +689,17 @@
                     aria-labelledby="aba-trello-tab"
                 >
 
-                    <p class="text-muted mb-2" style="font-size:13px;">
-                        Cole os itens direto na caixa "Adicionar item" de um
-                        checklist do Trello — uma linha vira um item.
+                    <p
+                        class="text-muted mb-2"
+                        style="font-size:13px;"
+                    >
+
+                        Cole os itens direto na caixa
+                        "Adicionar item" de um checklist
+                        do Trello — uma linha vira um item.
+
                     </p>
+
 
                     <textarea
                         id="texto-trello"
@@ -386,20 +708,46 @@
                         readonly
                     >{{ texto_trello }}</textarea>
 
-                    <div class="d-flex gap-2 mt-3">
+
+                    <div
+                        class="d-flex gap-2 mt-3"
+                    >
+
                         <button
                             type="button"
                             class="btn btn-outline-primary btn-sm"
                             data-copiar="texto-trello"
                         >
+
                             Copiar texto
+
                         </button>
-                        <form action="/download-trello" method="POST" class="d-inline">
-                            <input type="hidden" name="texto_trello" value="{{ texto_trello }}">
-                            <button type="submit" class="btn btn-success btn-sm">
+
+
+                        <form
+                            action="/download-trello"
+                            method="POST"
+                            class="d-inline"
+                        >
+
+                            <input
+                                type="hidden"
+                                name="texto_trello"
+                                value="{{ texto_trello }}"
+                            >
+
+
+                            <button
+                                type="submit"
+                                class="btn btn-success btn-sm"
+                            >
+
                                 Baixar .txt
+
                             </button>
+
                         </form>
+
                     </div>
 
                 </div>
@@ -407,56 +755,113 @@
             </div>
 
         </div>
+
     </div>
 
 </div>
 
 
 <div class="text-center mt-5">
-    <a href="/" class="btn btn-primary btn-lg">Analisar outro edital</a>
+
+    <a
+        href="/"
+        class="btn btn-primary btn-lg"
+    >
+
+        Analisar outro edital
+
+    </a>
+
 </div>
+
 
 {% endblock %}
 
 
 {% block scripts %}
+
 <script>
 
-document.querySelectorAll("[data-copiar]").forEach(function (botao) {
+document
+    .querySelectorAll("[data-copiar]")
+    .forEach(function (botao) {
 
-    botao.addEventListener("click", function () {
 
-        const alvo = document.getElementById(
-            botao.getAttribute("data-copiar")
-        );
+        botao.addEventListener(
+            "click",
+            function () {
 
-        if (!alvo) {
-            return;
-        }
 
-        navigator.clipboard.writeText(alvo.value).then(function () {
+                const alvo =
+                    document.getElementById(
+                        botao.getAttribute(
+                            "data-copiar"
+                        )
+                    );
 
-            const textoOriginal = botao.innerText;
 
-            botao.innerText = "Copiado!";
-            botao.classList.add("btn-success");
-            botao.classList.remove("btn-outline-primary");
+                if (!alvo) {
+                    return;
+                }
 
-            setTimeout(function () {
-                botao.innerText = textoOriginal;
-                botao.classList.remove("btn-success");
-                botao.classList.add("btn-outline-primary");
-            }, 1800);
 
-        }).catch(function () {
+                navigator.clipboard
+                    .writeText(alvo.value)
+                    .then(function () {
 
-            alvo.select();
 
-        });
+                        const textoOriginal =
+                            botao.innerText;
+
+
+                        botao.innerText =
+                            "Copiado!";
+
+
+                        botao.classList.add(
+                            "btn-success"
+                        );
+
+
+                        botao.classList.remove(
+                            "btn-outline-primary"
+                        );
+
+
+                        setTimeout(
+                            function () {
+
+
+                                botao.innerText =
+                                    textoOriginal;
+
+
+                                botao.classList.remove(
+                                    "btn-success"
+                                );
+
+
+                                botao.classList.add(
+                                    "btn-outline-primary"
+                                );
+
+
+                            },
+                            1800
+                        );
+
+
+                    })
+                    .catch(function () {
+
+                        alvo.select();
+
+                    });
+
+            });
 
     });
 
-});
-
 </script>
+
 {% endblock %}

@@ -2,6 +2,7 @@
 
 from pathlib import Path
 import re
+import unicodedata
 
 from openpyxl import load_workbook
 
@@ -10,7 +11,13 @@ from openpyxl import load_workbook
 # CONFIGURAÇÃO
 # ============================================================
 
-ARQUIVO_PRODUTOS = "dados/produtos.xlsx"
+# Caminho absoluto baseado na localização deste arquivo, e não
+# na pasta de onde o processo foi iniciado. Necessário porque
+# em ambientes serverless (Vercel) o diretório de trabalho não
+# é garantido ser a raiz do projeto.
+PASTA_RAIZ = Path(__file__).resolve().parent.parent
+
+ARQUIVO_PRODUTOS = PASTA_RAIZ / "dados" / "produtos.xlsx"
 ABA_PRODUTOS = "Pelotão DELTA"
 
 TIPOS_PERMITIDOS = {
@@ -80,18 +87,30 @@ TAMANHOS_TV = [
 
 def normalizar_texto(valor):
     """
-    Normaliza texto para comparação.
+    Normaliza texto para comparação:
+    maiúsculas, sem acentos, sem espaços nas pontas.
 
     Exemplo:
-        "Monitor 24\" Gamer"
+        "Televisão 50\" Smart"
         ->
-        "MONITOR 24\" GAMER"
+        "TELEVISAO 50\" SMART"
     """
 
     if valor is None:
         return ""
 
-    return str(valor).upper().strip()
+    texto = str(valor).upper().strip()
+
+    # Remove acentos preservando o restante do texto
+    # (inclusive aspas e símbolos usados para polegadas).
+    texto = unicodedata.normalize("NFKD", texto)
+    texto = "".join(
+        caractere
+        for caractere in texto
+        if not unicodedata.combining(caractere)
+    )
+
+    return texto
 
 
 # ============================================================
@@ -278,14 +297,21 @@ def identificar_tipo(texto):
     # ========================================================
     # MONITOR
     # ========================================================
+    # \bMONITOR\b sozinho não reconhece o plural
+    # "MONITORES". (MONITOR)(ES)? cobre singular e plural
+    # sem confundir com "MONITORAMENTO".
 
-    if re.search(r"\bMONITOR\b", texto):
+    if re.search(r"\bMONITOR(ES)?\b", texto):
 
         return "MONITOR"
 
     # ========================================================
     # TV
     # ========================================================
+    # Aceita as variações mais comuns usadas em editais:
+    # TV, TVS, TELEVISOR(ES), TELEVISAO/TELEVISOES (o texto
+    # já chega sem acento, ver normalizar_texto), SMART TV,
+    # TV LED, LED TV etc. — todas contêm um destes termos.
 
     if "SMART TV" in texto:
         return "TV"
@@ -293,7 +319,10 @@ def identificar_tipo(texto):
     if "TELEVISOR" in texto:
         return "TV"
 
-    if re.search(r"\bTV\b", texto):
+    if "TELEVISAO" in texto or "TELEVISOES" in texto:
+        return "TV"
+
+    if re.search(r"\bTVS?\b", texto):
         return "TV"
 
     return None
@@ -460,6 +489,53 @@ def caracteristicas_compativeis(
         return False
 
     return True
+
+
+# ============================================================
+# PONTUAÇÃO POR PALAVRAS-CHAVE
+# ============================================================
+# Usada apenas para DESEMPATAR candidatos que já passaram
+# pelos critérios obrigatórios (tipo + tamanho + segurança).
+# Nunca decide sozinha se um produto é compatível.
+
+PALAVRAS_CHAVE_BONUS = [
+    "SMART",
+    "LED",
+    "4K",
+    "QLED",
+    "OLED",
+    "FULL HD",
+    "HD",
+    "WI-FI",
+    "WIFI",
+    "USB",
+    "HDMI",
+    "IPS",
+    "CURVO",
+    "GAMER",
+    "CONVERSOR DIGITAL",
+    "CONTROLE REMOTO",
+    "ANDROID",
+]
+
+
+def pontuacao_palavras_chave(descricao_edital, produto_nome):
+    """
+    Conta quantas palavras-chave relevantes aparecem em
+    ambos os textos. Quanto maior, mais parecido.
+    """
+
+    edital = normalizar_texto(descricao_edital)
+    produto = normalizar_texto(produto_nome)
+
+    pontos = 0
+
+    for palavra in PALAVRAS_CHAVE_BONUS:
+
+        if palavra in edital and palavra in produto:
+            pontos += 1
+
+    return pontos
 
 
 # ============================================================
@@ -778,10 +854,24 @@ def encontrar_produto(
         return None
 
     # ========================================================
-    # PRIMEIRO PRODUTO COMPATÍVEL
+    # ESCOLHER O CANDIDATO MAIS PARECIDO
     # ========================================================
+    # Entre os candidatos que já passaram por tipo, tamanho e
+    # características obrigatórias, escolhe o que tem mais
+    # palavras-chave em comum com a descrição do edital
+    # (ex: SMART, 4K, WI-FI). Em empate, mantém a ordem
+    # original da planilha.
 
-    resultado = candidatos[0].copy()
+    candidatos_ordenados = sorted(
+        candidatos,
+        key=lambda produto: pontuacao_palavras_chave(
+            descricao_edital,
+            produto.get("produto", ""),
+        ),
+        reverse=True,
+    )
+
+    resultado = candidatos_ordenados[0].copy()
 
     # ========================================================
     # DADOS FIXOS DA EMPRESA

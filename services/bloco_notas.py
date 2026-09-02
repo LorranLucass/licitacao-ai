@@ -78,6 +78,198 @@ def extrair_modelo(produto):
     return texto
 
 
+def extrair_numero_processo(texto):
+    """
+    Extrai somente o número/ano de um texto de modalidade.
+
+    Exemplo:
+
+    "PREGÃO ELETRÔNICO Nº 010/2026"
+
+    Resultado:
+
+    "010/2026"
+
+    Se não achar o padrão NÚMERO/ANO, remove palavras comuns
+    da modalidade e devolve o que sobrar.
+    """
+
+    if not texto:
+        return ""
+
+    texto = str(texto).strip()
+
+    resultado = re.search(
+        r"(\d{1,5}\s*/\s*\d{2,4})",
+        texto
+    )
+
+    if resultado:
+        return resultado.group(1).replace(" ", "")
+
+    texto_limpo = texto.upper()
+
+    for termo in [
+        "PREGÃO ELETRÔNICO",
+        "PREGAO ELETRONICO",
+        "PREGÃO PRESENCIAL",
+        "PREGAO PRESENCIAL",
+        "PREGÃO",
+        "PREGAO",
+        "DISPENSA ELETRÔNICA",
+        "DISPENSA ELETRONICA",
+        "DISPENSA",
+        "CONCORRÊNCIA",
+        "CONCORRENCIA",
+        "TOMADA DE PREÇOS",
+        "TOMADA DE PRECOS",
+        "CONVITE",
+        "Nº",
+        "N°",
+        "NO",
+        "N.",
+    ]:
+        texto_limpo = texto_limpo.replace(termo, "")
+
+    return texto_limpo.strip(" :.-–—")
+
+
+def formatar_pregao_dispensa(dados):
+    """
+    Monta o rótulo "Pregão: N" ou "Dispensa: N" de acordo
+    com a modalidade identificada no edital.
+    """
+
+    modalidade = str(
+        dados.get("modalidade", "")
+    ).strip().upper()
+
+    numero = extrair_numero_processo(
+        dados.get("pregao_dispensa", "")
+    )
+
+    if "DISPENSA" in modalidade:
+        rotulo = "Dispensa"
+
+    elif "PREGÃO" in modalidade or "PREGAO" in modalidade:
+        rotulo = "Pregão"
+
+    elif "DISPENSA" in str(
+        dados.get("pregao_dispensa", "")
+    ).upper():
+        rotulo = "Dispensa"
+
+    else:
+        # Padrão mais comum quando a modalidade não veio
+        # claramente identificada.
+        rotulo = "Pregão"
+
+    if not numero:
+        return f"{rotulo}: "
+
+    return f"{rotulo}: {numero}"
+
+
+def formatar_data_hora_sessao(dados):
+    """
+    Junta data + horário da sessão em um único texto:
+
+    "04/09/2026 às 15:00"
+
+    Aceita horário em formatos como "15h00min", "15h", "15:00".
+    """
+
+    data = str(
+        dados.get("data_sessao", "")
+    ).strip()
+
+    horario_bruto = str(
+        dados.get("horario_sessao", "")
+    ).strip()
+
+    horario = ""
+
+    if horario_bruto:
+
+        resultado = re.search(
+            r"(\d{1,2})\s*[hH:]\s*(\d{2})?",
+            horario_bruto
+        )
+
+        if resultado:
+
+            hora = int(resultado.group(1))
+            minuto = int(resultado.group(2) or 0)
+
+            horario = f"{hora:02d}:{minuto:02d}"
+
+        else:
+            horario = horario_bruto
+
+    if data and horario:
+        return f"{data} às {horario}"
+
+    return data or horario or "CONFORME EDITAL"
+
+
+def calcular_valor_total_proposta(itens):
+    """
+    Calcula o valor total da proposta a partir dos itens,
+    usando a mesma regra do bloco de notas:
+
+    - se o item tem valor estimado no edital, usa esse valor
+      (ou valor_unitário × quantidade, se não vier o total);
+    - senão, usa custo × 1,60 × quantidade.
+
+    Usada tanto pelo bloco de notas quanto pela proposta Word,
+    para os dois nunca mostrarem valores diferentes.
+    """
+
+    valor_total_proposta = 0.0
+
+    for item in itens or []:
+
+        quantidade = converter_quantidade(
+            item.get("quantidade", 0)
+        )
+
+        custo = converter_numero(
+            item.get("custo", 0)
+        )
+
+        valor_unitario = item.get("valor_unitario")
+        valor_total = item.get("valor_total")
+
+        tem_estimado = (
+            valor_unitario is not None
+            and str(valor_unitario).strip() != ""
+        )
+
+        if tem_estimado:
+
+            estimado_unitario = converter_numero(
+                valor_unitario
+            )
+
+            if (
+                valor_total is not None
+                and str(valor_total).strip()
+            ):
+                estimado_total = converter_numero(valor_total)
+
+            else:
+                estimado_total = estimado_unitario * quantidade
+
+            valor_total_proposta += estimado_total
+
+        else:
+
+            lancar_total = (custo * 1.60) * quantidade
+            valor_total_proposta += lancar_total
+
+    return valor_total_proposta
+
+
 def gerar_bloco_notas(
     dados: dict,
     caminho_saida: str
@@ -86,47 +278,52 @@ def gerar_bloco_notas(
     linhas = []
 
     # ==================================================
-    # CABEÇALHO
+    # CABEÇALHO — COMEÇA PELO ÓRGÃO
     # ==================================================
 
-    linhas.append("================================")
-    linhas.append("LICITAÇÃO")
-    linhas.append("================================")
+    linhas.append(
+        f"{dados.get('orgao', '')}"
+    )
+
     linhas.append("")
 
     linhas.append(
-        f"ORGÃO: {dados.get('orgao', '')}"
+        formatar_pregao_dispensa(dados)
     )
 
-    linhas.append(
-        f"PREGÃO/DISPENSA: "
-        f"{dados.get('pregao_dispensa', '')}"
-    )
+    linhas.append("")
 
     linhas.append(
-        f"UASG (COMPRAS NET): "
-        f"{dados.get('uasg', '')}"
-    )
-
-    linhas.append(
-        f"PROC. ADM: "
+        f"Processo administrativo: "
         f"{dados.get('processo_administrativo', '')}"
     )
 
-    linhas.append(
-        f"HORÁRIO DA SESSÃO: "
-        f"{dados.get('horario_sessao', '')}"
-    )
+    linhas.append("")
+
+    if dados.get("uasg"):
+
+        linhas.append(
+            f"UASG: {dados.get('uasg', '')}"
+        )
+
+        linhas.append("")
 
     linhas.append(
-        f"CIDADE/ESTADO: "
+        f"Cidade/Estado: "
         f"{dados.get('cidade_estado', '')}"
     )
 
     linhas.append("")
 
     linhas.append(
-        f"MODO DE DISPUTA: "
+        f"Data da sessão: "
+        f"{formatar_data_hora_sessao(dados)}"
+    )
+
+    linhas.append("")
+
+    linhas.append(
+        f"Modo de disputa: "
         f"{dados.get('modo_disputa', '')}"
     )
 
@@ -135,39 +332,40 @@ def gerar_bloco_notas(
     # ==================================================
     # ADESÃO / CARONA
     # ==================================================
+    # O valor já vem normalizado em "SIM"/"NÃO" pela
+    # extração da IA. Este fallback só cobre o caso de
+    # vir algo fora do padrão.
 
-    adesao = dados.get(
-        "adesao_carona",
-        ""
-    )
+    adesao = str(
+        dados.get("adesao_carona", "")
+    ).strip().upper()
 
-    texto_adesao = str(
-        adesao
-    ).strip().lower()
+    if adesao not in ["SIM", "NÃO"]:
 
-    if texto_adesao in [
-        "sim",
-        "s"
-    ]:
-
-        adesao_saida = "SIM"
-
-    elif texto_adesao in [
-        "não",
-        "nao",
-        "n"
-    ]:
-
-        adesao_saida = "NÃO"
-
-    else:
-
-        adesao_saida = adesao
+        adesao = (
+            "SIM"
+            if adesao in ["S", "SIM"]
+            else "NÃO"
+            if adesao
+            else ""
+        )
 
     linhas.append(
-        f"ADESÃO/CARONA - {adesao_saida}"
+        f"Adesão / Carona: {adesao}"
     )
 
+    linhas.append("")
+
+    # ==================================================
+    # INTERVALO / REDUÇÃO
+    # ==================================================
+
+    linhas.append(
+        f"Intervalo / Redução: "
+        f"{dados.get('intervalo_reducao', '')}"
+    )
+
+    linhas.append("")
     linhas.append("")
 
     # ==================================================
@@ -212,8 +410,11 @@ def gerar_bloco_notas(
         else "CONFORME EDITAL"
     )
 
+    linhas.append("PRAZOS")
+    linhas.append("")
+
     linhas.append(
-        f"PROPOSTA/VALIDADE: {proposta}"
+        f"Validade da proposta: {proposta}"
         + (
             ""
             if proposta == "CONFORME EDITAL"
@@ -221,8 +422,10 @@ def gerar_bloco_notas(
         )
     )
 
+    linhas.append("")
+
     linhas.append(
-        f"ENTREGA/FORNECIMENTO: {entrega}"
+        f"Entrega: {entrega}"
         + (
             ""
             if entrega == "CONFORME EDITAL"
@@ -230,8 +433,10 @@ def gerar_bloco_notas(
         )
     )
 
+    linhas.append("")
+
     linhas.append(
-        f"PAGAMENTO: {pagamento}"
+        f"Pagamento: {pagamento}"
         + (
             ""
             if pagamento == "CONFORME EDITAL"
@@ -240,16 +445,6 @@ def gerar_bloco_notas(
     )
 
     linhas.append("")
-
-    # ==================================================
-    # INTERVALO / REDUÇÃO
-    # ==================================================
-
-    linhas.append(
-        "INTERVALO/REDUÇÃO - "
-        f"{dados.get('intervalo_reducao', '')}"
-    )
-
     linhas.append("")
 
     # ==================================================
@@ -264,33 +459,69 @@ def gerar_bloco_notas(
     if not isinstance(atencao, dict):
         atencao = {}
 
-    linhas.append("ATENÇÃO:")
+    linhas.append("ATENÇÃO")
+    linhas.append("")
 
     linhas.append(
-        f"(COM DECLARAÇÃO OU SEM): "
+        f"Instalação: "
+        f"{atencao.get('instalacao', '')}"
+    )
+
+    linhas.append("")
+
+    linhas.append(
+        f"Declaração: "
         f"{atencao.get('declaracao', '')}"
     )
 
+    linhas.append("")
+
     linhas.append(
-        f"(COM IDENTIFICAÇÃO OU SEM): "
+        f"Identificação: "
         f"{atencao.get('identificacao', '')}"
     )
 
+    linhas.append("")
+
     linhas.append(
-        f"(CAUÇÃO): "
+        f"Caução: "
         f"{atencao.get('caucao', '')}"
     )
 
+    linhas.append("")
+
     linhas.append(
-        f"(GARANTIA): "
-        f"{atencao.get('garantia', '')}"
+        f"Garantia: "
+        f"{atencao.get('garantia', 'SEM')}"
     )
 
+    garantia_tipos = atencao.get("garantia_tipos", [])
+
+    if not isinstance(garantia_tipos, list):
+        garantia_tipos = []
+
+    if len(garantia_tipos) == 1:
+
+        linhas.append(
+            f"Tipo: {garantia_tipos[0]}"
+        )
+
+    elif len(garantia_tipos) > 1:
+
+        linhas.append("Tipos:")
+
+        for tipo in garantia_tipos:
+            linhas.append(f"- {tipo}")
+
+    linhas.append("")
     linhas.append("")
 
     # ==================================================
     # ITENS
     # ==================================================
+
+    linhas.append("ITENS")
+    linhas.append("")
 
     valor_total_proposta = 0.0
     valor_custo_total = 0.0
@@ -372,55 +603,80 @@ def gerar_bloco_notas(
         fabricante = "BELMICRO"
 
         # ==================================================
-        # DESCRIÇÃO DO ITEM COMPATÍVEL
+        # PRODUTO DA TABELA (o que será vendido) E
+        # DESCRIÇÃO DO EDITAL (o que foi pedido) — as duas
+        # informações ficam visíveis, uma embaixo da outra.
         # ==================================================
-        # Usa o produto encontrado na tabela DELTA (o que
-        # realmente será vendido), não a descrição bruta do
-        # edital.
 
-        descricao_item = item.get(
+        produto_tabela = item.get(
             "produto_tabela",
             ""
-        ) or item.get(
+        )
+
+        descricao_edital = item.get(
             "descricao",
             ""
         )
+
+        unidade = item.get(
+            "unidade",
+            ""
+        ) or "UND"
 
         # ==================================================
         # ITEM
         # ==================================================
 
         linhas.append(
-            f"ITEM {item.get('item', '')}: "
-            f"{descricao_item}"
+            f"Item {item.get('item', '')}"
         )
 
         linhas.append("")
 
         linhas.append(
-            f"QUANTIDADE: "
+            f"Produto: {produto_tabela}"
+        )
+
+        linhas.append("")
+
+        linhas.append(
+            f"Marca: {marca}"
+        )
+
+        linhas.append("")
+
+        linhas.append(
+            f"Modelo: {modelo}"
+        )
+
+        linhas.append("")
+
+        linhas.append(
+            f"Fabricante: {fabricante}"
+        )
+
+        linhas.append("")
+
+        linhas.append(
+            f"Quantidade: "
             f"{item.get('quantidade', '')}"
         )
 
         linhas.append("")
 
         linhas.append(
-            f"MARCA: {marca}"
-        )
-
-        linhas.append(
-            f"MODELO: {modelo}"
-        )
-
-        linhas.append(
-            f"FABRICANTE: {fabricante}"
+            f"Unidade: {unidade}"
         )
 
         linhas.append("")
 
         # ==================================================
-        # COM ESTIMADO
+        # CUSTO / MÍNIMO FEIRÃO
         # ==================================================
+        # O cálculo de markup (custo + 60% quando não há
+        # valor estimado no edital) continua existindo e
+        # entra nos totais no fim do bloco — só não aparece
+        # mais linha a linha aqui, para manter o item limpo.
 
         if tem_estimado:
 
@@ -430,9 +686,7 @@ def gerar_bloco_notas(
 
             if (
                 valor_total is not None
-                and str(
-                    valor_total
-                ).strip()
+                and str(valor_total).strip()
             ):
 
                 estimado_total = converter_numero(
@@ -446,122 +700,38 @@ def gerar_bloco_notas(
                     * quantidade
                 )
 
-            linhas.append(
-                "COM ESTIMADO:"
-            )
-
-            linhas.append("")
-
-            linhas.append(
-                f"ESTIMADO UNITÁRIO: "
-                f"{formatar_moeda(estimado_unitario)}"
-            )
-
-            linhas.append(
-                f"ESTIMADO TOTAL: "
-                f"{formatar_moeda(estimado_total)}"
-            )
-
-            linhas.append(
-                f"CUSTO: "
-                f"{formatar_moeda(custo)}"
-            )
-
-            custo_total = (
-                custo
-                * quantidade
-            )
-
-            linhas.append(
-                f"CUSTO TOTAL: "
-                f"{formatar_moeda(custo_total)}"
-            )
-
-            minimo_total = (
-                minimo
-                * quantidade
-            )
-
-            linhas.append(
-                f"MÍNIMO UNITÁRIO: "
-                f"{formatar_moeda(minimo)}"
-            )
-
-            linhas.append(
-                f"MÍNIMO TOTAL: "
-                f"{formatar_moeda(minimo_total)}"
-            )
-
-            valor_total_proposta += (
-                estimado_total
-            )
-
-        # ==================================================
-        # SEM ESTIMADO
-        # ==================================================
+            valor_total_proposta += estimado_total
 
         else:
 
-            custo_total = (
-                custo
-                * quantidade
-            )
+            lancar_unitario = custo * 1.60
+            lancar_total = lancar_unitario * quantidade
 
-            minimo_total = (
-                minimo
-                * quantidade
-            )
+            valor_total_proposta += lancar_total
 
-            # CUSTO + 60%
-            lancar_unitario = (
-                custo
-                * 1.60
-            )
+        linhas.append(
+            f"Custo: {formatar_moeda(custo)}"
+        )
 
-            lancar_total = (
-                lancar_unitario
-                * quantidade
-            )
+        linhas.append("")
 
-            linhas.append(
-                "SEM ESTIMADO:"
-            )
+        linhas.append(
+            f"Mínimo Feirão: {formatar_moeda(minimo)}"
+        )
 
-            linhas.append("")
+        linhas.append("")
+        linhas.append("")
 
-            linhas.append(
-                f"CUSTO: "
-                f"{formatar_moeda(custo)}"
-            )
+        # ==================================================
+        # DESCRIÇÃO DO EDITAL
+        # ==================================================
+        # Descrição original exigida pelo edital, mantida
+        # junto (sem substituir o produto correspondente
+        # da tabela mostrado acima).
 
-            linhas.append(
-                f"CUSTO TOTAL: "
-                f"{formatar_moeda(custo_total)}"
-            )
-
-            linhas.append(
-                f"MÍNIMO UNITÁRIO: "
-                f"{formatar_moeda(minimo)}"
-            )
-
-            linhas.append(
-                f"MÍNIMO TOTAL: "
-                f"{formatar_moeda(minimo_total)}"
-            )
-
-            linhas.append(
-                f"LANÇAR UNITÁRIO: "
-                f"{formatar_moeda(lancar_unitario)}"
-            )
-
-            linhas.append(
-                f"LANÇAR TOTAL: "
-                f"{formatar_moeda(lancar_total)}"
-            )
-
-            valor_total_proposta += (
-                lancar_total
-            )
+        linhas.append("Descrição do edital:")
+        linhas.append("")
+        linhas.append(descricao_edital)
 
         # ==================================================
         # CUSTO TOTAL GERAL
@@ -573,11 +743,6 @@ def gerar_bloco_notas(
         )
 
         linhas.append("")
-
-        linhas.append(
-            "--------------------------------"
-        )
-
         linhas.append("")
 
     # ==================================================
@@ -585,12 +750,14 @@ def gerar_bloco_notas(
     # ==================================================
 
     linhas.append(
-        f"VALOR TOTAL DA PROPOSTA: "
+        f"Valor total da proposta: "
         f"{formatar_moeda(valor_total_proposta)}"
     )
 
+    linhas.append("")
+
     linhas.append(
-        f"VALOR CUSTO TOTAL: "
+        f"Valor custo total: "
         f"{formatar_moeda(valor_custo_total)}"
     )
 

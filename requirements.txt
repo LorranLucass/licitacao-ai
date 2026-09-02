@@ -4,3 +4,4 @@ python-dotenv
 Flask
 openpyxl
 Werkzeug
+python-docx

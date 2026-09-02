@@ -1,6 +1,10 @@
 from pathlib import Path
 
 from docx import Document
+from docx.enum.text import WD_ALIGN_PARAGRAPH
+from docx.enum.table import WD_ALIGN_VERTICAL
+from docx.oxml.ns import qn
+from docx.oxml import OxmlElement
 
 from services.bloco_notas import (
     formatar_data_hora_sessao,
@@ -199,6 +203,70 @@ def valor_por_extenso(valor):
         )
 
     return resultado.upper()
+
+
+def definir_bordas_celula(celula, tamanho="4", cor="000000"):
+    """
+    Adiciona bordas visíveis (topo, base, esquerda, direita)
+    a uma célula de tabela.
+
+    python-docx não tem uma propriedade pronta para bordas de
+    célula — só existe no nível da tabela inteira (table
+    style) — então isso é feito escrevendo o XML da célula
+    diretamente. É o jeito padrão de fazer isso com esta
+    biblioteca.
+    """
+
+    tcPr = celula._tc.get_or_add_tcPr()
+
+    bordas = OxmlElement("w:tcBorders")
+
+    for lado in ("top", "left", "bottom", "right"):
+
+        elemento = OxmlElement(f"w:{lado}")
+        elemento.set(qn("w:val"), "single")
+        elemento.set(qn("w:sz"), tamanho)
+        elemento.set(qn("w:space"), "0")
+        elemento.set(qn("w:color"), cor)
+
+        bordas.append(elemento)
+
+    tcPr.append(bordas)
+
+
+def centralizar_celula(celula):
+    """
+    Centraliza o conteúdo de uma célula na horizontal
+    (texto) e na vertical (dentro da altura da linha).
+    """
+
+    celula.vertical_alignment = WD_ALIGN_VERTICAL.CENTER
+
+    for paragrafo in celula.paragraphs:
+
+        paragrafo.alignment = WD_ALIGN_PARAGRAPH.CENTER
+
+
+def formatar_linha_de_item(linha):
+    """
+    Aplica borda + centralização a todas as células de uma
+    linha da tabela de itens (usada nas linhas novas
+    inseridas pela análise do edital).
+    """
+
+    ja_formatadas = set()
+
+    for celula in linha.cells:
+
+        identificador = id(celula._tc)
+
+        if identificador in ja_formatadas:
+            continue
+
+        ja_formatadas.add(identificador)
+
+        definir_bordas_celula(celula)
+        centralizar_celula(celula)
 
 
 def substituir_texto_no_paragrafo(paragrafo, substituicoes):
@@ -688,6 +756,9 @@ def preencher_tabela_itens(documento, itens):
                     ""
                 )
             )
+
+        # Borda + texto centralizado na linha recém-criada.
+        formatar_linha_de_item(nova_linha)
 
     print(
         f"{len(itens)} item(ns) inserido(s) "

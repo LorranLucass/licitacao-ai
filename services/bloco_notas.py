@@ -278,42 +278,21 @@ def gerar_bloco_notas(
     linhas = []
 
     # ==================================================
-    # CABEÇALHO — COMEÇA PELO ÓRGÃO
+    # CABEÇALHO
     # ==================================================
 
-    linhas.append(
-        f"{dados.get('orgao', '')}"
-    )
-
-    linhas.append("")
-
-    linhas.append(
-        formatar_pregao_dispensa(dados)
-    )
-
-    linhas.append("")
+    linhas.append(f"{dados.get('orgao', '')}")
+    linhas.append(formatar_pregao_dispensa(dados))
 
     linhas.append(
         f"Processo administrativo: "
         f"{dados.get('processo_administrativo', '')}"
     )
 
-    linhas.append("")
-
-    if dados.get("uasg"):
-
-        linhas.append(
-            f"UASG: {dados.get('uasg', '')}"
-        )
-
-        linhas.append("")
-
     linhas.append(
         f"Cidade/Estado: "
         f"{dados.get('cidade_estado', '')}"
     )
-
-    linhas.append("")
 
     linhas.append(
         f"Data da sessão: "
@@ -356,10 +335,6 @@ def gerar_bloco_notas(
 
     linhas.append("")
 
-    # ==================================================
-    # INTERVALO / REDUÇÃO
-    # ==================================================
-
     linhas.append(
         f"Intervalo / Redução: "
         f"{dados.get('intervalo_reducao', '')}"
@@ -372,25 +347,15 @@ def gerar_bloco_notas(
     # PRAZOS
     # ==================================================
 
-    proposta = dados.get(
-        "proposta_validade",
-        ""
+    proposta = dados.get("proposta_validade", "")
+
+    unidade_validade = (
+        dados.get("proposta_validade_unidade", "DIAS")
+        or "DIAS"
     )
 
-    unidade_validade = dados.get(
-        "proposta_validade_unidade",
-        "DIAS"
-    ) or "DIAS"
-
-    entrega = dados.get(
-        "entrega_fornecimento",
-        ""
-    )
-
-    pagamento = dados.get(
-        "pagamento",
-        ""
-    )
+    entrega = dados.get("entrega_fornecimento", "")
+    pagamento = dados.get("pagamento", "")
 
     proposta = (
         proposta
@@ -411,7 +376,6 @@ def gerar_bloco_notas(
     )
 
     linhas.append("PRAZOS")
-    linhas.append("")
 
     linhas.append(
         f"Validade da proposta: {proposta}"
@@ -422,8 +386,6 @@ def gerar_bloco_notas(
         )
     )
 
-    linhas.append("")
-
     linhas.append(
         f"Entrega: {entrega}"
         + (
@@ -432,8 +394,6 @@ def gerar_bloco_notas(
             else " DIAS"
         )
     )
-
-    linhas.append("")
 
     linhas.append(
         f"Pagamento: {pagamento}"
@@ -451,48 +411,31 @@ def gerar_bloco_notas(
     # ATENÇÃO
     # ==================================================
 
-    atencao = dados.get(
-        "atencao",
-        {}
-    )
+    atencao = dados.get("atencao", {})
 
     if not isinstance(atencao, dict):
         atencao = {}
 
     linhas.append("ATENÇÃO")
-    linhas.append("")
 
     linhas.append(
-        f"Instalação: "
-        f"{atencao.get('instalacao', '')}"
+        f"Instalação: {atencao.get('instalacao', '')}"
     )
 
-    linhas.append("")
-
     linhas.append(
-        f"Declaração: "
-        f"{atencao.get('declaracao', '')}"
+        f"Declaração: {atencao.get('declaracao', '')}"
     )
 
-    linhas.append("")
-
     linhas.append(
-        f"Identificação: "
-        f"{atencao.get('identificacao', '')}"
+        f"Identificação: {atencao.get('identificacao', '')}"
     )
 
-    linhas.append("")
-
     linhas.append(
-        f"Caução: "
-        f"{atencao.get('caucao', '')}"
+        f"Caução: {atencao.get('caucao', '')}"
     )
 
-    linhas.append("")
-
     linhas.append(
-        f"Garantia: "
-        f"{atencao.get('garantia', 'SEM')}"
+        f"Garantia: {atencao.get('garantia', 'SEM')}"
     )
 
     garantia_tipos = atencao.get("garantia_tipos", [])
@@ -502,9 +445,7 @@ def gerar_bloco_notas(
 
     if len(garantia_tipos) == 1:
 
-        linhas.append(
-            f"Tipo: {garantia_tipos[0]}"
-        )
+        linhas.append(f"Tipo: {garantia_tipos[0]}")
 
     elif len(garantia_tipos) > 1:
 
@@ -526,228 +467,160 @@ def gerar_bloco_notas(
     valor_total_proposta = 0.0
     valor_custo_total = 0.0
 
-    for item in dados.get(
-        "itens",
-        []
-    ):
+    itens = dados.get("itens", [])
+
+    for indice, item in enumerate(itens):
+
+        produto_tabela = item.get("produto_tabela", "")
+        descricao_edital = item.get("descricao", "")
+
+        marca = item.get("marca_tabela", "") or "HQ"
+        modelo = item.get("modelo", "")
+        fabricante = "BELMICRO"
 
         quantidade = converter_quantidade(
-            item.get(
-                "quantidade",
-                0
-            )
+            item.get("quantidade", 0)
         )
 
         custo = converter_numero(
-            item.get(
-                "custo",
-                0
-            )
+            item.get("custo", 0)
         )
 
         minimo = converter_numero(
-            item.get(
-                "minimo_feirao",
-                0
-            )
+            item.get("minimo_feirao", 0)
         )
 
-        valor_unitario = item.get(
-            "valor_unitario"
-        )
-
-        valor_total = item.get(
-            "valor_total"
-        )
+        valor_unitario = item.get("valor_unitario")
+        valor_total = item.get("valor_total")
 
         tem_estimado = (
             valor_unitario is not None
-            and str(
-                valor_unitario
-            ).strip() != ""
+            and str(valor_unitario).strip() != ""
         )
 
-        # ==================================================
-        # DADOS DO PRODUTO DELTA
-        # ==================================================
-
-        marca = "HQ"
-
-        # Primeiro tenta o novo campo "modelo"
-        modelo = item.get(
-            "modelo",
-            ""
-        )
-
-        # Compatibilidade com versão anterior
-        if not modelo:
-
-            modelo = item.get(
-                "modelo_tabela",
-                ""
-            )
-
-        # Se ainda não encontrar,
-        # extrai do nome completo do produto.
-        if not modelo:
-
-            produto = item.get(
-                "produto_tabela",
-                ""
-            )
-
-            modelo = extrair_modelo(
-                produto
-            )
-
-        fabricante = "BELMICRO"
-
-        # ==================================================
-        # PRODUTO DA TABELA (o que será vendido) E
-        # DESCRIÇÃO DO EDITAL (o que foi pedido) — as duas
-        # informações ficam visíveis, uma embaixo da outra.
-        # ==================================================
-
-        produto_tabela = item.get(
-            "produto_tabela",
-            ""
-        )
-
-        descricao_edital = item.get(
-            "descricao",
-            ""
-        )
-
-        unidade = item.get(
-            "unidade",
-            ""
-        ) or "UND"
-
-        # ==================================================
-        # ITEM
-        # ==================================================
+        # ==============================================
+        # ITEM N : PRODUTO
+        # ==============================================
 
         linhas.append(
-            f"Item {item.get('item', '')}"
+            f"Item {item.get('item', '')} : {produto_tabela}"
         )
 
         linhas.append("")
 
-        linhas.append(
-            f"Produto: {produto_tabela}"
-        )
+        linhas.append(descricao_edital)
+
+        linhas.append("")
+        linhas.append("")
+
+        linhas.append(f"Marca: {marca}")
+        linhas.append(f"Modelo: {modelo}")
+        linhas.append(f"Fabricante: {fabricante}")
 
         linhas.append("")
 
-        linhas.append(
-            f"Marca: {marca}"
-        )
+        linhas.append(f"Quantidade: {item.get('quantidade', '')}")
 
         linhas.append("")
-
-        linhas.append(
-            f"Modelo: {modelo}"
-        )
-
         linhas.append("")
 
-        linhas.append(
-            f"Fabricante: {fabricante}"
-        )
-
-        linhas.append("")
-
-        linhas.append(
-            f"Quantidade: "
-            f"{item.get('quantidade', '')}"
-        )
-
-        linhas.append("")
-
-        linhas.append(
-            f"Unidade: {unidade}"
-        )
-
-        linhas.append("")
-
-        # ==================================================
-        # CUSTO / MÍNIMO FEIRÃO
-        # ==================================================
-        # O cálculo de markup (custo + 60% quando não há
-        # valor estimado no edital) continua existindo e
-        # entra nos totais no fim do bloco — só não aparece
-        # mais linha a linha aqui, para manter o item limpo.
+        # ==============================================
+        # COM ESTIMADO / SEM ESTIMADO
+        # ==============================================
 
         if tem_estimado:
 
-            estimado_unitario = converter_numero(
-                valor_unitario
+            estimado_unitario = converter_numero(valor_unitario)
+
+            if valor_total is not None and str(valor_total).strip():
+                estimado_total = converter_numero(valor_total)
+            else:
+                estimado_total = estimado_unitario * quantidade
+
+            custo_total = custo * quantidade
+            minimo_total = minimo * quantidade
+
+            linhas.append("COM ESTIMADO:")
+
+            linhas.append(
+                f">>>> ESTIMADO UNITÁRIO: "
+                f"{formatar_moeda(estimado_unitario)}"
             )
 
-            if (
-                valor_total is not None
-                and str(valor_total).strip()
-            ):
+            linhas.append(
+                f">>>> ESTIMADO TOTAL: "
+                f"{formatar_moeda(estimado_total)}"
+            )
 
-                estimado_total = converter_numero(
-                    valor_total
-                )
+            linhas.append(
+                f">>>> CUSTO: {formatar_moeda(custo)}"
+            )
 
-            else:
+            linhas.append(
+                f">>>> CUSTO TOTAL: {formatar_moeda(custo_total)}"
+            )
 
-                estimado_total = (
-                    estimado_unitario
-                    * quantidade
-                )
+            linhas.append(
+                f">>>> MÍNIMO UNITÁRIO: {formatar_moeda(minimo)}"
+            )
+
+            linhas.append(
+                f">>>> MÍNIMO TOTAL: {formatar_moeda(minimo_total)}"
+            )
 
             valor_total_proposta += estimado_total
 
         else:
 
+            custo_total = custo * quantidade
+            minimo_total = minimo * quantidade
+
             lancar_unitario = custo * 1.60
             lancar_total = lancar_unitario * quantidade
 
+            linhas.append("SEM ESTIMADO:")
+
+            linhas.append(
+                f">>>> CUSTO: {formatar_moeda(custo)}"
+            )
+
+            linhas.append(
+                f">>>> CUSTO TOTAL: {formatar_moeda(custo_total)}"
+            )
+
+            linhas.append(
+                f">>>> MÍNIMO UNITÁRIO: {formatar_moeda(minimo)}"
+            )
+
+            linhas.append(
+                f">>>> MÍNIMO TOTAL: {formatar_moeda(minimo_total)}"
+            )
+
+            linhas.append(
+                f">>>> LANÇAR UNITÁRIO: "
+                f"{formatar_moeda(lancar_unitario)}"
+            )
+
+            linhas.append(
+                f">>>> LANÇAR TOTAL: {formatar_moeda(lancar_total)}"
+            )
+
             valor_total_proposta += lancar_total
 
-        linhas.append(
-            f"Custo: {formatar_moeda(custo)}"
-        )
+        valor_custo_total += custo * quantidade
 
-        linhas.append("")
-
-        linhas.append(
-            f"Mínimo Feirão: {formatar_moeda(minimo)}"
-        )
-
-        linhas.append("")
-        linhas.append("")
-
-        # ==================================================
-        # DESCRIÇÃO DO EDITAL
-        # ==================================================
-        # Descrição original exigida pelo edital, mantida
-        # junto (sem substituir o produto correspondente
-        # da tabela mostrado acima).
-
-        linhas.append("Descrição do edital:")
-        linhas.append("")
-        linhas.append(descricao_edital)
-
-        # ==================================================
-        # CUSTO TOTAL GERAL
-        # ==================================================
-
-        valor_custo_total += (
-            custo
-            * quantidade
-        )
-
-        linhas.append("")
-        linhas.append("")
+        # Separador entre um item e o próximo (mesma
+        # espaçamento usado entre as outras seções).
+        if indice < len(itens) - 1:
+            linhas.append("")
+            linhas.append("")
 
     # ==================================================
     # TOTAIS
     # ==================================================
+
+    linhas.append("")
+    linhas.append("")
 
     linhas.append(
         f"Valor total da proposta: "
@@ -767,19 +640,10 @@ def gerar_bloco_notas(
 
     texto_final = "\n".join(linhas)
 
-    arquivo = Path(
-        caminho_saida
-    )
+    arquivo = Path(caminho_saida)
 
-    arquivo.parent.mkdir(
-        parents=True,
-        exist_ok=True
-    )
+    arquivo.parent.mkdir(parents=True, exist_ok=True)
 
-    arquivo.write_text(
-        texto_final,
-        encoding="utf-8"
-    )
+    arquivo.write_text(texto_final, encoding="utf-8")
 
     return texto_final
-    
